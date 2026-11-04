@@ -39,7 +39,7 @@ class NoteController extends Controller
             $query->where('folder_id', $request->input('folder_id'));
         }
 
-        $notes = $query->orderBy('created_at', 'desc')->paginate(15);
+        $notes = $query->orderByDesc('created_at')->paginate(15)->withQueryString();
         $folders = Folder::orderBy('name')->get();
 
         return view('notes.index', compact('notes', 'folders'));

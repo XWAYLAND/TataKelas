@@ -6,6 +6,7 @@ use App\Models\Folder;
 use App\Http\Requests\StoreFolderRequest;
 use App\Http\Requests\UpdateFolderRequest;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
@@ -17,7 +18,7 @@ class FolderController extends Controller
     public function index(): View
     {
         $folders = Folder::withCount('resources')
-            ->orderBy('created_at', 'desc')
+            ->orderByDesc('created_at')
             ->get();
 
         return view('folders.index', compact('folders'));
@@ -60,52 +61,73 @@ class FolderController extends Controller
     /**
      * Display the specified folder with its resources.
      */
-    public function show(string $id): View|RedirectResponse
+    public function show(Request $request, string $id): View|RedirectResponse
     {
         try {
-            $folder = Folder::with([
-                'resources' => function ($query) {
-                    $query->orderBy('created_at', 'desc');
-                },
-                'notes' => function ($query) {
-                    $query->orderBy('created_at', 'desc');
-                },
-                'photos' => function ($query) {
-                    $query->orderBy('created_at', 'desc');
-                }
+            // All counts are produced by scalar subqueries, so the folder page
+            // no longer loads every child row just to calculate statistics.
+            $folder = Folder::withCount([
+                'resources',
+                'resources as to_read_resources_count' => fn ($query) => $query->where('read_status', 'to_read'),
+                'resources as reading_resources_count' => fn ($query) => $query->where('read_status', 'reading'),
+                'resources as completed_resources_count' => fn ($query) => $query->where('read_status', 'completed'),
+                'notes',
+                'photos',
             ])->findOrFail($id);
 
-            // Get all folders for resource move dropdown
-            $folders = Folder::where('id', '!=', $id)
+            // Only the active tab's rows are loaded, 15/12 at a time.
+            $resources = $folder->resources()
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->paginate(15, ['*'], 'resources_page')
+                ->withQueryString();
+
+            $notes = $folder->notes()
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->paginate(12, ['*'], 'notes_page')
+                ->withQueryString();
+
+            $photos = $folder->photos()
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->paginate(12, ['*'], 'photos_page')
+                ->withQueryString();
+
+            // Get all folders for the move-resource dropdown.
+            $folders = Folder::select('id', 'name')
+                ->where('id', '!=', $id)
                 ->orderBy('name')
                 ->get();
 
-            // Statistics
             $stats = [
-                'total' => $folder->resources->count(),
-                'to_read' => $folder->resources->where('read_status', 'to_read')->count(),
-                'reading' => $folder->resources->where('read_status', 'reading')->count(),
-                'completed' => $folder->resources->where('read_status', 'completed')->count(),
+                'total' => $folder->resources_count,
+                'to_read' => $folder->to_read_resources_count,
+                'reading' => $folder->reading_resources_count,
+                'completed' => $folder->completed_resources_count,
             ];
 
-            // Resource type counts
-            $typeStats = [
-                'documentation' => $folder->resources->where('resource_type', 'documentation')->count(),
-                'article' => $folder->resources->where('resource_type', 'article')->count(),
-                'repository' => $folder->resources->where('resource_type', 'repository')->count(),
-                'video' => $folder->resources->where('resource_type', 'video')->count(),
-                'other' => $folder->resources->where('resource_type', 'other')->count(),
-            ];
-
-            // Item counts
             $itemCounts = [
-                'resources' => $folder->resources->count(),
-                'notes' => $folder->notes->count(),
-                'photos' => $folder->photos->count(),
-                'total' => $folder->resources->count() + $folder->notes->count() + $folder->photos->count(),
+                'resources' => $folder->resources_count,
+                'notes' => $folder->notes_count,
+                'photos' => $folder->photos_count,
+                'total' => $folder->resources_count + $folder->notes_count + $folder->photos_count,
             ];
 
-            return view('folders.show', compact('folder', 'folders', 'stats', 'typeStats', 'itemCounts'));
+            $activeTab = in_array($request->query('tab'), ['resources', 'notes', 'photos'], true)
+                ? $request->query('tab')
+                : ($request->has('notes_page') ? 'notes' : ($request->has('photos_page') ? 'photos' : 'resources'));
+
+            return view('folders.show', compact(
+                'folder',
+                'folders',
+                'stats',
+                'itemCounts',
+                'resources',
+                'notes',
+                'photos',
+                'activeTab'
+            ));
         } catch (ModelNotFoundException $e) {
             return redirect()
                 ->route('folders.index')

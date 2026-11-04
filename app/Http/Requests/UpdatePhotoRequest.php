@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdatePhotoRequest extends FormRequest
 {
@@ -22,7 +23,7 @@ class UpdatePhotoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'folder_id' => ['required', 'integer', 'exists:folders,id'],
+            'folder_id' => ['required', 'integer', Rule::exists('folders', 'id')->where('user_id', $this->user()->id)],
             'title' => ['required', 'string', 'max:255'],
             'photo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'], // Max 5MB, optional on update
             'description' => ['nullable', 'string', 'max:1000'],

@@ -70,21 +70,21 @@
     <!-- Tabs Navigation -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-6 dark-mode-transition">
         <div class="border-b border-gray-200 dark:border-gray-700">
-            <nav class="flex space-x-1 px-6" role="tablist">
-                <button onclick="switchTab('resources')" id="tab-resources" class="tab-button active px-6 py-4 text-sm font-medium border-b-2 border-blue-600 dark:border-blue-400 text-blue-600 dark:text-blue-400">
+            <nav class="flex space-x-1 px-6 overflow-x-auto" role="tablist">
+                <button onclick="switchTab('resources')" id="tab-resources" class="tab-button whitespace-nowrap px-6 py-4 text-sm font-medium border-b-2 {{ $activeTab === 'resources' ? 'active border-blue-600 dark:border-blue-400 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600' }}">
                     <i class="fas fa-bookmark mr-2"></i> Resources ({{ $itemCounts['resources'] }})
                 </button>
-                <button onclick="switchTab('notes')" id="tab-notes" class="tab-button px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600">
+                <button onclick="switchTab('notes')" id="tab-notes" class="tab-button whitespace-nowrap px-6 py-4 text-sm font-medium border-b-2 {{ $activeTab === 'notes' ? 'active border-blue-600 dark:border-blue-400 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600' }}">
                     <i class="fas fa-sticky-note mr-2"></i> Notes ({{ $itemCounts['notes'] }})
                 </button>
-                <button onclick="switchTab('photos')" id="tab-photos" class="tab-button px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600">
+                <button onclick="switchTab('photos')" id="tab-photos" class="tab-button whitespace-nowrap px-6 py-4 text-sm font-medium border-b-2 {{ $activeTab === 'photos' ? 'active border-blue-600 dark:border-blue-400 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600' }}">
                     <i class="fas fa-image mr-2"></i> Photos ({{ $itemCounts['photos'] }})
                 </button>
             </nav>
         </div>
         
         <!-- Tab Content: Resources -->
-        <div id="content-resources" class="tab-content">
+        <div id="content-resources" class="tab-content {{ $activeTab === 'resources' ? '' : 'hidden' }}">
             <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                 <h2 class="text-xl font-semibold text-gray-800 dark:text-white">
                     <i class="fas fa-bookmark text-blue-600 dark:text-blue-400"></i> Resources
@@ -94,7 +94,7 @@
                 </a>
             </div>
             
-            @if($folder->resources->isEmpty())
+            @if($resources->isEmpty())
                 <div class="p-12 text-center">
                     <i class="fas fa-bookmark text-gray-300 dark:text-gray-600 text-5xl mb-4"></i>
                     <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No Resources Yet</h3>
@@ -116,13 +116,13 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            @foreach($folder->resources as $resource)
+                            @foreach($resources as $resource)
                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
                                     <td class="px-6 py-4">
                                         <div class="flex items-start">
                                             <div>
                                                 <div class="text-sm font-medium text-gray-900 dark:text-white mb-1">
-                                                    {{ $resource->title }}
+                                                    <a href="{{ route('resources.show', $resource->id) }}" class="hover:text-blue-600 dark:hover:text-blue-400">{{ $resource->title }}</a>
                                                 </div>
                                                 <a href="{{ $resource->url }}" target="_blank" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 break-all">
                                                     <i class="fas fa-external-link-alt mr-1"></i> {{ Str::limit($resource->url, 50) }}
@@ -178,11 +178,17 @@
                         </tbody>
                     </table>
                 </div>
+
+                @if($resources->hasPages())
+                    <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                        {{ $resources->appends(array_merge(request()->query(), ['tab' => 'resources']))->links() }}
+                    </div>
+                @endif
             @endif
         </div>
         
         <!-- Tab Content: Notes -->
-        <div id="content-notes" class="tab-content hidden">
+        <div id="content-notes" class="tab-content {{ $activeTab === 'notes' ? '' : 'hidden' }}">
             <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                 <h2 class="text-xl font-semibold text-gray-800 dark:text-white">
                     <i class="fas fa-sticky-note text-yellow-600 dark:text-yellow-400"></i> Notes
@@ -192,7 +198,7 @@
                 </a>
             </div>
             
-            @if($folder->notes->isEmpty())
+            @if($notes->isEmpty())
                 <div class="p-12 text-center">
                     <i class="fas fa-sticky-note text-gray-300 dark:text-gray-600 text-5xl mb-4"></i>
                     <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No Notes Yet</h3>
@@ -203,10 +209,12 @@
                 </div>
             @else
                 <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    @foreach($folder->notes as $note)
+                    @foreach($notes as $note)
                         <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-5 hover:shadow-md transition border-l-4 {{ $note->priority == 'high' ? 'border-red-500' : ($note->priority == 'medium' ? 'border-yellow-500' : 'border-green-500') }}">
                             <div class="flex justify-between items-start mb-3">
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ $note->title }}</h3>
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                    <a href="{{ route('notes.show', $note->id) }}" class="hover:text-yellow-600 dark:hover:text-yellow-400">{{ $note->title }}</a>
+                                </h3>
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full {{ $note->priority_badge_color }}">
                                     <i class="fas {{ $note->priority_icon }}"></i> {{ ucfirst($note->priority) }}
                                 </span>
@@ -230,11 +238,17 @@
                         </div>
                     @endforeach
                 </div>
+
+                @if($notes->hasPages())
+                    <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                        {{ $notes->appends(array_merge(request()->query(), ['tab' => 'notes']))->links() }}
+                    </div>
+                @endif
             @endif
         </div>
         
         <!-- Tab Content: Photos -->
-        <div id="content-photos" class="tab-content hidden">
+        <div id="content-photos" class="tab-content {{ $activeTab === 'photos' ? '' : 'hidden' }}">
             <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                 <h2 class="text-xl font-semibold text-gray-800 dark:text-white">
                     <i class="fas fa-image text-purple-600 dark:text-purple-400"></i> Photos
@@ -244,7 +258,7 @@
                 </a>
             </div>
             
-            @if($folder->photos->isEmpty())
+            @if($photos->isEmpty())
                 <div class="p-12 text-center">
                     <i class="fas fa-image text-gray-300 dark:text-gray-600 text-5xl mb-4"></i>
                     <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No Photos Yet</h3>
@@ -255,13 +269,15 @@
                 </div>
             @else
                 <div class="p-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    @foreach($folder->photos as $photo)
+                    @foreach($photos as $photo)
                         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-xl transition group">
-                            <div class="aspect-square overflow-hidden bg-gray-100 dark:bg-gray-900">
-                                <img src="{{ $photo->url }}" alt="{{ $photo->title }}" class="w-full h-full object-cover group-hover:scale-110 transition duration-300">
-                            </div>
+                            <a href="{{ route('photos.show', $photo->id) }}" class="block aspect-square overflow-hidden bg-gray-100 dark:bg-gray-900">
+                                <img src="{{ $photo->url }}" alt="{{ $photo->title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition duration-300">
+                            </a>
                             <div class="p-3">
-                                <h4 class="font-semibold text-gray-900 dark:text-white text-sm truncate mb-1">{{ $photo->title }}</h4>
+                                <h4 class="font-semibold text-gray-900 dark:text-white text-sm truncate mb-1">
+                                    <a href="{{ route('photos.show', $photo->id) }}" class="hover:text-purple-600 dark:hover:text-purple-400">{{ $photo->title }}</a>
+                                </h4>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ $photo->formatted_size }}</p>
                                 <div class="flex justify-between items-center">
                                     <a href="{{ $photo->url }}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-xs" title="View Full Size">
@@ -284,6 +300,12 @@
                         </div>
                     @endforeach
                 </div>
+
+                @if($photos->hasPages())
+                    <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                        {{ $photos->appends(array_merge(request()->query(), ['tab' => 'photos']))->links() }}
+                    </div>
+                @endif
             @endif
         </div>
     </div>
@@ -341,7 +363,15 @@
         const activeButton = document.getElementById('tab-' + tabName);
         activeButton.classList.add('active', 'border-blue-600', 'dark:border-blue-400', 'text-blue-600', 'dark:text-blue-400');
         activeButton.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+
+        // Keep the selected tab in the URL so a refresh returns to it.
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', tabName);
+        window.history.replaceState({}, '', url);
     }
+
+    // Restore the tab selected by the controller.
+    switchTab('{{ $activeTab }}');
     
     function showMoveModal(resourceId, resourceTitle) {
         document.getElementById('moveModal').classList.remove('hidden');

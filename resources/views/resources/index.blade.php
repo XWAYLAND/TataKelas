@@ -148,7 +148,7 @@
                             <div class="flex-1 mb-4 lg:mb-0">
                                 <!-- Title & URL -->
                                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                                    {{ $resource->title }}
+                                    <a href="{{ route('resources.show', $resource->id) }}" class="hover:text-blue-600 dark:hover:text-blue-400">{{ $resource->title }}</a>
                                 </h3>
                                 <a href="{{ $resource->url }}" target="_blank" class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 break-all mb-3 inline-block">
                                     <i class="fas fa-external-link-alt mr-1"></i> {{ Str::limit($resource->url, 80) }}
@@ -188,6 +188,9 @@
                                 
                                 <!-- Actions -->
                                 <div class="flex items-center space-x-3">
+                                    <a href="{{ route('resources.show', $resource->id) }}" class="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition" title="View Resource">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
                                     <a href="{{ route('folders.show', $resource->folder_id) }}" class="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition" title="View Folder">
                                         <i class="fas fa-folder-open"></i>
                                     </a>

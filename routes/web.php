@@ -5,6 +5,7 @@ use App\Http\Controllers\FolderController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\PhotoController;
+use App\Http\Controllers\AuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -15,26 +16,31 @@ use App\Http\Controllers\PhotoController;
 |
 */
 
-// Redirect root to folders dashboard
-Route::get('/', function () {
-    return redirect()->route('folders.index');
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1');
+    Route::get('/register', [AuthController::class, 'showRegistration'])->name('register');
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:6,1');
 });
 
-// Folder Resource Routes
-Route::resource('folders', FolderController::class);
+Route::middleware('auth')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Resource Routes with additional custom actions
-Route::resource('resources', ResourceController::class);
+    Route::get('/', function () {
+        return redirect()->route('folders.index');
+    });
 
-// Additional Resource Actions
-Route::patch('resources/{resource}/status', [ResourceController::class, 'updateStatus'])
-    ->name('resources.update-status');
+    Route::resource('folders', FolderController::class);
 
-Route::patch('resources/{resource}/move', [ResourceController::class, 'move'])
-    ->name('resources.move');
+    Route::resource('resources', ResourceController::class);
 
-// Note Resource Routes
-Route::resource('notes', NoteController::class);
+    Route::patch('resources/{resource}/status', [ResourceController::class, 'updateStatus'])
+        ->name('resources.update-status');
 
-// Photo Resource Routes
-Route::resource('photos', PhotoController::class);
+    Route::patch('resources/{resource}/move', [ResourceController::class, 'move'])
+        ->name('resources.move');
+
+    Route::resource('notes', NoteController::class);
+    Route::get('photos/{photo}/file', [PhotoController::class, 'file'])->name('photos.file');
+    Route::resource('photos', PhotoController::class);
+});

@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class PhotoController extends Controller
 {
@@ -36,7 +37,7 @@ class PhotoController extends Controller
             $query->where('folder_id', $request->input('folder_id'));
         }
 
-        $photos = $query->orderBy('created_at', 'desc')->paginate(12);
+        $photos = $query->orderByDesc('created_at')->paginate(12)->withQueryString();
         $folders = Folder::orderBy('name')->get();
 
         return view('photos.index', compact('photos', 'folders'));
@@ -65,7 +66,7 @@ class PhotoController extends Controller
             if ($request->hasFile('photo')) {
                 $file = $request->file('photo');
                 $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
-                $filepath = $file->storeAs('photos', $filename, 'public');
+                $filepath = $file->storeAs('photos', $filename, 'local');
                 
                 $validatedData['filename'] = $file->getClientOriginalName();
                 $validatedData['filepath'] = $filepath;
@@ -103,6 +104,25 @@ class PhotoController extends Controller
     }
 
     /**
+     * Serve a photo only after its owning folder has been authorized.
+     */
+    public function file(string $id): BinaryFileResponse
+    {
+        $photo = Photo::findOrFail($id);
+        $disk = Storage::disk('local');
+
+        if (!$disk->exists($photo->filepath)) {
+            $disk = Storage::disk('public');
+
+            if (!$disk->exists($photo->filepath)) {
+                abort(404);
+            }
+        }
+
+        return response()->file($disk->path($photo->filepath));
+    }
+
+    /**
      * Show the form for editing the specified photo.
      */
     public function edit(string $id): View|RedirectResponse
@@ -131,14 +151,13 @@ class PhotoController extends Controller
             // Handle new file upload if provided
             if ($request->hasFile('photo')) {
                 // Delete old file
-                if (Storage::exists($photo->filepath)) {
-                    Storage::delete($photo->filepath);
-                }
+                Storage::disk('local')->delete($photo->filepath);
+                Storage::disk('public')->delete($photo->filepath);
                 
                 // Upload new file
                 $file = $request->file('photo');
                 $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
-                $filepath = $file->storeAs('photos', $filename, 'public');
+                $filepath = $file->storeAs('photos', $filename, 'local');
                 
                 $validatedData['filename'] = $file->getClientOriginalName();
                 $validatedData['filepath'] = $filepath;

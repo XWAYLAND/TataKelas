@@ -1,7 +1,11 @@
 @import 'tailwindcss';
 
+/* This application toggles dark mode with a class on <html>. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
+@source '../../app/**/*.php';
 @source "../**/*.blade.php";
 @source "../**/*.js";
 @source "../**/*.vue";

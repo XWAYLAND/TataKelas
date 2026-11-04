@@ -23,7 +23,7 @@ class StoreNoteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'folder_id' => ['required', 'integer', 'exists:folders,id'],
+            'folder_id' => ['required', 'integer', Rule::exists('folders', 'id')->where('user_id', $this->user()->id)],
             'title' => ['required', 'string', 'max:255'],
             'content' => ['required', 'string', 'max:50000'],
             'priority' => ['required', Rule::in(['low', 'medium', 'high'])],

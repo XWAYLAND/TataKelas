@@ -3,13 +3,25 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class Photo extends Model
 {
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope('owned', function (Builder $query): void {
+            if (Auth::check()) {
+                $query->whereHas('folder', fn (Builder $folderQuery) => $folderQuery
+                    ->where('user_id', Auth::id()));
+            }
+        });
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -39,7 +51,7 @@ class Photo extends Model
      */
     public function getUrlAttribute(): string
     {
-        return Storage::url($this->filepath);
+        return route('photos.file', $this->getKey());
     }
 
     /**
@@ -65,9 +77,8 @@ class Photo extends Model
         parent::boot();
 
         static::deleting(function ($photo) {
-            if (Storage::exists($photo->filepath)) {
-                Storage::delete($photo->filepath);
-            }
+            Storage::disk('local')->delete($photo->filepath);
+            Storage::disk('public')->delete($photo->filepath);
         });
     }
 }

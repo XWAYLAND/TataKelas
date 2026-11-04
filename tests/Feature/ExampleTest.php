@@ -10,10 +10,16 @@ class ExampleTest extends TestCase
     /**
      * A basic test example.
      */
-    public function test_the_application_returns_a_successful_response(): void
+    public function test_guest_is_redirected_to_sign_in(): void
     {
         $response = $this->get('/');
 
-        $response->assertStatus(200);
+        $response->assertRedirect(route('login'));
+    }
+
+    public function test_guest_can_open_authentication_pages(): void
+    {
+        $this->get(route('login'))->assertOk();
+        $this->get(route('register'))->assertOk();
     }
 }

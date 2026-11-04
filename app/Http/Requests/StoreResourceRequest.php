@@ -23,7 +23,7 @@ class StoreResourceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'folder_id' => ['required', 'integer', 'exists:folders,id'],
+            'folder_id' => ['required', 'integer', Rule::exists('folders', 'id')->where('user_id', $this->user()->id)],
             'title' => ['required', 'string', 'max:255'],
             'url' => ['required', 'url', 'max:2048'],
             'resource_type' => ['required', Rule::in(['documentation', 'article', 'repository', 'video', 'other'])],

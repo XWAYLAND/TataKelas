@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\Rule;
 
 class ResourceController extends Controller
 {
@@ -45,7 +46,7 @@ class ResourceController extends Controller
             $query->where('folder_id', $request->input('folder_id'));
         }
 
-        $resources = $query->orderBy('created_at', 'desc')->paginate(20);
+        $resources = $query->orderByDesc('created_at')->paginate(20)->withQueryString();
         $folders = Folder::orderBy('name')->get();
 
         return view('resources.index', compact('resources', 'folders'));
@@ -200,7 +201,10 @@ class ResourceController extends Controller
     {
         try {
             $request->validate([
-                'folder_id' => ['required', 'exists:folders,id']
+                'folder_id' => [
+                    'required',
+                    Rule::exists('folders', 'id')->where('user_id', $request->user()->id),
+                ],
             ]);
 
             $resource = Resource::findOrFail($id);

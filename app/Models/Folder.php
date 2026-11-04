@@ -3,8 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Auth;
 
 class Folder extends Model
 {
@@ -20,6 +23,37 @@ class Folder extends Model
         'description',
         'color_code',
     ];
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope('owned', function (Builder $query): void {
+            if (Auth::check()) {
+                $query->where($query->qualifyColumn('user_id'), Auth::id());
+            }
+        });
+
+        static::creating(function (Folder $folder): void {
+            if (Auth::check()) {
+                $folder->user_id = Auth::id();
+            }
+        });
+
+        // Database cascade deletes photo rows without firing model events,
+        // so remove the physical files before the folder is deleted.
+        static::deleting(function (Folder $folder): void {
+            $folder->photos()->get()->each(function (Photo $photo): void {
+                $photo->delete();
+            });
+        });
+    }
+
+    /**
+     * Get the user that owns the folder.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 
     /**
      * Get all resources for the folder.
@@ -43,37 +77,5 @@ class Folder extends Model
     public function photos(): HasMany
     {
         return $this->hasMany(Photo::class);
-    }
-
-    /**
-     * Get the count of resources in the folder.
-     */
-    public function getResourcesCountAttribute(): int
-    {
-        return $this->resources()->count();
-    }
-
-    /**
-     * Get the count of notes in the folder.
-     */
-    public function getNotesCountAttribute(): int
-    {
-        return $this->notes()->count();
-    }
-
-    /**
-     * Get the count of photos in the folder.
-     */
-    public function getPhotosCountAttribute(): int
-    {
-        return $this->photos()->count();
-    }
-
-    /**
-     * Get total items count in the folder.
-     */
-    public function getTotalItemsCountAttribute(): int
-    {
-        return $this->resources()->count() + $this->notes()->count() + $this->photos()->count();
     }
 }
