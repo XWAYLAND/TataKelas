@@ -2,15 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Resource;
-use App\Models\Folder;
+use App\Http\Requests\StoreClassResourceRequest;
 use App\Http\Requests\StoreResourceRequest;
 use App\Http\Requests\UpdateResourceRequest;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\View\View;
-use Illuminate\Http\Request;
+use App\Models\Folder;
+use App\Models\Resource;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ResourceController extends Controller
 {
@@ -19,15 +24,16 @@ class ResourceController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = Resource::with('folder');
+        $query = Resource::with('folder')
+            ->whereHas('folder', fn ($folderQuery) => $folderQuery->whereNull('classroom_id'));
 
         // Search filter (title and notes)
         if ($request->filled('search')) {
             $searchTerm = $request->input('search');
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('title', 'LIKE', "%{$searchTerm}%")
-                  ->orWhere('notes', 'LIKE', "%{$searchTerm}%")
-                  ->orWhere('url', 'LIKE', "%{$searchTerm}%");
+                    ->orWhere('notes', 'LIKE', "%{$searchTerm}%")
+                    ->orWhere('url', 'LIKE', "%{$searchTerm}%");
             });
         }
 
@@ -47,7 +53,10 @@ class ResourceController extends Controller
         }
 
         $resources = $query->orderByDesc('created_at')->paginate(20)->withQueryString();
-        $folders = Folder::orderBy('name')->get();
+        $folders = Folder::whereNull('classroom_id')
+            ->where('user_id', $request->user()->id)
+            ->orderBy('name')
+            ->get();
 
         return view('resources.index', compact('resources', 'folders'));
     }
@@ -57,7 +66,10 @@ class ResourceController extends Controller
      */
     public function create(Request $request): View
     {
-        $folders = Folder::orderBy('name')->get();
+        $folders = Folder::whereNull('classroom_id')
+            ->where('user_id', $request->user()->id)
+            ->orderBy('name')
+            ->get();
         $selectedFolderId = $request->input('folder_id');
 
         return view('resources.create', compact('folders', 'selectedFolderId'));
@@ -70,6 +82,15 @@ class ResourceController extends Controller
     {
         try {
             $validatedData = $request->validated();
+            if ($request->hasFile('file')) {
+                $file = $request->file('file');
+                $validatedData['file_path'] = $file->storeAs(
+                    'personal-resources',
+                    Str::uuid().'.'.$file->extension(),
+                    'local'
+                );
+            }
+            unset($validatedData['file']);
             $resource = Resource::create($validatedData);
 
             return redirect()
@@ -83,6 +104,45 @@ class ResourceController extends Controller
         }
     }
 
+    public function storeForClassroom(StoreClassResourceRequest $request, Folder $folder): RedirectResponse
+    {
+        $this->authorize('create', [Resource::class, $folder]);
+
+        $validated = $request->validated();
+        $data = [
+            'title' => $validated['title'],
+            'url' => $validated['url'] ?? null,
+            'resource_type' => $validated['resource_type'],
+            'notes' => $validated['notes'] ?? null,
+            'read_status' => 'to_read',
+        ];
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $data['file_path'] = $file->storeAs(
+                'class-materials',
+                Str::uuid().'.'.$file->extension(),
+                'local'
+            );
+        }
+
+        $folder->resources()->create($data);
+
+        return redirect()
+            ->route('classrooms.folders.show', [$folder->classroom_id, $folder])
+            ->with('success', 'Learning resource added.');
+    }
+
+    public function classroomFile(Resource $resource): StreamedResponse
+    {
+        $this->authorize('view', $resource);
+        abort_unless($resource->file_path && Storage::disk('local')->exists($resource->file_path), 404);
+
+        $extension = pathinfo($resource->file_path, PATHINFO_EXTENSION);
+
+        return Storage::disk('local')->download($resource->file_path, Str::slug($resource->title).'.'.$extension);
+    }
+
     /**
      * Display the specified resource.
      */
@@ -90,11 +150,22 @@ class ResourceController extends Controller
     {
         try {
             $resource = Resource::with('folder')->findOrFail($id);
+            $this->authorize('view', $resource);
+
+            if ($resource->folder->classroom_id) {
+                return redirect()->route('classrooms.folders.show', [
+                    $resource->folder->classroom_id,
+                    $resource->folder_id,
+                ]);
+            }
+
             return view('resources.show', compact('resource'));
         } catch (ModelNotFoundException $e) {
             return redirect()
                 ->route('resources.index')
                 ->with('error', 'Resource not found.');
+        } catch (AuthorizationException $e) {
+            throw $e;
         }
     }
 
@@ -105,13 +176,19 @@ class ResourceController extends Controller
     {
         try {
             $resource = Resource::findOrFail($id);
-            $folders = Folder::orderBy('name')->get();
+            $this->authorize('update', $resource);
+            $folders = Folder::whereNull('classroom_id')
+                ->where('user_id', auth()->id())
+                ->orderBy('name')
+                ->get();
 
             return view('resources.edit', compact('resource', 'folders'));
         } catch (ModelNotFoundException $e) {
             return redirect()
                 ->route('resources.index')
                 ->with('error', 'Resource not found.');
+        } catch (AuthorizationException $e) {
+            throw $e;
         }
     }
 
@@ -122,8 +199,20 @@ class ResourceController extends Controller
     {
         try {
             $resource = Resource::findOrFail($id);
+            $this->authorize('update', $resource);
             $validatedData = $request->validated();
-            
+            if ($request->hasFile('file')) {
+                if ($resource->file_path) {
+                    Storage::disk('local')->delete($resource->file_path);
+                }
+                $file = $request->file('file');
+                $validatedData['file_path'] = $file->storeAs(
+                    'personal-resources',
+                    Str::uuid().'.'.$file->extension(),
+                    'local'
+                );
+            }
+            unset($validatedData['file']);
             $resource->update($validatedData);
 
             return redirect()
@@ -133,6 +222,8 @@ class ResourceController extends Controller
             return redirect()
                 ->route('resources.index')
                 ->with('error', 'Resource not found.');
+        } catch (AuthorizationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             return redirect()
                 ->back()
@@ -148,6 +239,7 @@ class ResourceController extends Controller
     {
         try {
             $resource = Resource::findOrFail($id);
+            $this->authorize('delete', $resource);
             $resourceTitle = $resource->title;
             $folderId = $resource->folder_id;
 
@@ -160,6 +252,8 @@ class ResourceController extends Controller
             return redirect()
                 ->route('resources.index')
                 ->with('error', 'Resource not found.');
+        } catch (AuthorizationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             return redirect()
                 ->back()
@@ -174,10 +268,11 @@ class ResourceController extends Controller
     {
         try {
             $request->validate([
-                'read_status' => ['required', 'in:to_read,reading,completed']
+                'read_status' => ['required', 'in:to_read,reading,completed'],
             ]);
 
             $resource = Resource::findOrFail($id);
+            $this->authorize('update', $resource);
             $resource->update(['read_status' => $request->input('read_status')]);
 
             return redirect()
@@ -187,6 +282,8 @@ class ResourceController extends Controller
             return redirect()
                 ->back()
                 ->with('error', 'Resource not found.');
+        } catch (AuthorizationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             return redirect()
                 ->back()
@@ -203,11 +300,15 @@ class ResourceController extends Controller
             $request->validate([
                 'folder_id' => [
                     'required',
-                    Rule::exists('folders', 'id')->where('user_id', $request->user()->id),
+                    Rule::exists('folders', 'id')
+                        ->where('user_id', $request->user()->id)
+                        ->whereNull('classroom_id')
+                        ->where('visibility', 'private'),
                 ],
             ]);
 
             $resource = Resource::findOrFail($id);
+            $this->authorize('update', $resource);
             $oldFolderId = $resource->folder_id;
             $newFolderId = $request->input('folder_id');
 
@@ -226,6 +327,8 @@ class ResourceController extends Controller
             return redirect()
                 ->back()
                 ->with('error', 'Resource not found.');
+        } catch (AuthorizationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             return redirect()
                 ->back()

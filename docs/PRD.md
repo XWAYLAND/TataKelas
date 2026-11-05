@@ -1,17 +1,17 @@
 # Product Requirements Document (PRD)
 
-## FolderIn — Knowledge & Context Bookmark Manager
+## TataKelas — Workspace Murid & Sistem Pembelajaran
 
 | Atribut | Keterangan |
 | --- | --- |
-| Nama produk | FolderIn |
-| Jenis produk | Aplikasi web manajemen pengetahuan pribadi |
+| Nama produk | TataKelas |
+| Jenis produk | Workspace belajar pribadi murid dan sistem pembelajaran berbasis classroom |
 | Versi dokumen | 1.0 |
-| Status | Draft / MVP |
+| Status | Draft / Hybrid LMS |
 | Tanggal | 4 November 2026 |
 | Platform | Web (desktop dan mobile browser) |
 | Teknologi | Laravel 12, Blade, MySQL/SQLite, Tailwind CSS |
-| Pemilik produk | Tim FolderIn |
+| Pemilik produk | Tim TataKelas |
 | Dokumen terkait | [`README.md`](../README.md) |
 
 ---
@@ -39,11 +39,11 @@
 
 ## 1. Ringkasan Eksekutif
 
-FolderIn adalah aplikasi web untuk menyimpan dan mengelola resource belajar dalam folder pribadi. Berbeda dari bookmark manager biasa, FolderIn menyimpan konteks resource: jenis resource, status baca, catatan pribadi, dan foto pendukung seperti screenshot atau diagram.
+TataKelas adalah web yang mengatur workspace belajar pribadi murid sekaligus learning system berbasis classroom. Murid dapat menyimpan folder, referensi, catatan, dan foto untuk dirinya sendiri; guru membagikan materi dan tugas, menerima pengumpulan, serta memberi nilai dan feedback.
 
-Produk menyasar pelajar, mahasiswa, developer, peneliti, dan profesional yang sering mengumpulkan tautan dari berbagai sumber tetapi kesulitan menemukannya kembali. FolderIn menyatukan tautan, catatan, dan foto dalam satu tempat, dengan isolasi data per pengguna.
+Produk menyasar murid yang membutuhkan satu tempat untuk mengatur kegiatan belajar pribadi dan mengikuti pembelajaran kelas. TataKelas menyatukan workspace privat, classroom, materi, tugas, pengumpulan, dan penilaian, dengan isolasi data per pengguna.
 
-MVP saat ini berfokus pada:
+Produk berfokus pada:
 
 - Autentikasi akun.
 - Folder pribadi.
@@ -52,6 +52,9 @@ MVP saat ini berfokus pada:
 - Foto privat.
 - Pencarian dan filter dasar.
 - Dashboard ringkasan.
+- Role student, teacher, dan admin (admin juga dapat mengajar).
+- Classroom dengan kode gabung, folder materi, tugas bertenggat, submission, dan penilaian.
+- Pemisahan ketat antara folder privat dan konten classroom.
 
 ---
 
@@ -186,9 +189,20 @@ Prioritas memakai MoSCoW: **M** = Must have, **S** = Should have, **C** = Could 
 | FR-26 | Pengguna dapat melihat halaman daftar semua catatan | S | Selesai |
 | FR-27 | Pengguna dapat melihat halaman daftar semua foto | S | Selesai |
 | FR-28 | Pengguna dapat melihat halaman detail resource/catatan/foto | C | Selesai |
-| FR-29 | Pengguna dapat mengelola profil dan mengganti password | C | Belum |
+| FR-29 | Pengguna dapat mengelola profil | C | Belum |
 | FR-30 | Pengguna dapat mereset password melalui email | C | Belum |
-| FR-31 | Admin dapat mengelola pengguna dan konten | C | Belum |
+| FR-31 | Admin dapat mengelola pengguna lintas sistem | C | Selesai |
+| FR-32 | Registrasi publik membuat akun dengan role student | M | Dalam implementasi |
+| FR-33 | Teacher/Admin dapat membuat classroom dengan kode gabung | M | Dalam implementasi |
+| FR-34 | Student dapat bergabung ke classroom melalui kode | M | Dalam implementasi |
+| FR-35 | Teacher/Admin dapat membagikan folder materi dan tugas bertenggat | M | Dalam implementasi |
+| FR-36 | Student dapat mengumpulkan teks, URL, atau file; submission terlambat diberi status `late` | M | Dalam implementasi |
+| FR-37 | Teacher/Admin pemilik classroom dapat memberi nilai 0–100 dan feedback | M | Dalam implementasi |
+| FR-38 | Folder privat student tidak dapat dilihat oleh Teacher, Admin, atau student lain | M | Dalam implementasi |
+| FR-39 | Berkas materi/submission hanya dapat diunduh oleh pengguna yang berhak | M | Dalam implementasi |
+| FR-40 | Pengguna dapat mengganti kata sandi dengan verifikasi kata sandi saat ini | S | Selesai |
+| FR-41 | Login tanpa opsi remember me memakai cookie sesi yang berakhir saat browser ditutup | S | Selesai |
+| FR-42 | Admin mengelola akun lintas sistem dan melihat audit tindakan akun | C | Selesai |
 
 ### 4.4 Kebutuhan Non-Fungsional
 
@@ -236,7 +250,7 @@ Prioritas memakai MoSCoW: **M** = Must have, **S** = Should have, **C** = Could 
 ### 4.7 Batasan
 
 - Aplikasi berbasis web, belum ada aplikasi mobile native.
-- Hanya ada satu role pengguna pada MVP.
+- Registrasi publik hanya menghasilkan role `student`; role `teacher` dan `admin` ditetapkan secara administratif.
 - Pencarian memakai `LIKE`, belum full-text search.
 - Tidak ada API publik.
 - Tidak ada email transaksional untuk reset password atau verifikasi.
@@ -246,7 +260,7 @@ Prioritas memakai MoSCoW: **M** = Must have, **S** = Should have, **C** = Could 
 
 ## 5. Ruang Lingkup
 
-### 5.1 In Scope (MVP)
+### 5.1 In Scope
 
 - Autentikasi: registrasi, login, logout, remember me.
 - Manajemen folder pribadi.
@@ -259,14 +273,24 @@ Prioritas memakai MoSCoW: **M** = Must have, **S** = Should have, **C** = Could 
 - Upload, ganti, hapus, dan penyajian foto privat.
 - Dashboard ringkasan.
 - Isolasi data per pengguna.
+- Akun admin tidak memiliki akses ke workspace pribadi berupa folder, resource, catatan, atau foto; akses classroom tetap tersedia.
+- Pemisahan konten privat dan classroom; materi kelas hanya dapat dilihat pengajar dan murid terdaftar.
+- Classroom untuk teacher/admin dan pendaftaran student dengan kode.
+- Folder kelas untuk materi dan tugas dengan tenggat.
+- Resource kelas berupa tautan atau berkas privat yang hanya dapat diunduh anggota kelas.
+- Submission tugas berupa teks, tautan, atau berkas.
+- Penilaian 0–100 dan feedback oleh teacher/admin pemilik classroom.
+- Penerimaan submission terlambat dengan penanda `late`.
+- Otorisasi berbasis role dan policy untuk folder serta submission.
+- Panel admin untuk mencari akun, mengubah role, membuat password sementara, dan melihat audit log tindakan akun.
+- Penghapusan akun ditolak selama masih ada data folder, classroom, membership kelas, atau submission terkait.
 - Dark mode dan tampilan responsif.
 - Validasi form dan flash message.
 - Test dasar autentikasi dan kepemilikan data.
 
-### 5.2 Out of Scope (MVP)
+### 5.2 Out of Scope
 
-- Role admin dan panel administrasi.
-- Berbagi folder atau resource ke pengguna lain.
+- Berbagi folder privat atau resource personal ke pengguna lain.
 - Kolaborasi real-time.
 - Komentar pada resource.
 - Tag dan kategori lintas folder.
@@ -280,18 +304,17 @@ Prioritas memakai MoSCoW: **M** = Must have, **S** = Should have, **C** = Could 
 - API publik.
 - Full-text search.
 - Object storage S3 untuk produksi.
-- Audit log.
+- Audit log umum untuk aktivitas selain tindakan administrasi akun.
 - Analitik penggunaan.
 - Integrasi AI/LLM.
 - Pembayaran atau langganan.
 
 ### 5.3 Di Luar Batas tetapi Direncanakan
 
-Item berikut tidak termasuk MVP, tetapi struktur produk disiapkan untuk mendukungnya:
+Item berikut tidak termasuk lingkup saat ini:
 
 - Tag dan pencarian global.
-- Berbagi folder.
-- Panel admin.
+- Forum dan komentar antaranggota classroom.
 - Import/export.
 - PWA.
 
@@ -482,6 +505,37 @@ Item berikut tidak termasuk MVP, tetapi struktur produk disiapkan untuk mendukun
 - Akses file foto pengguna lain gagal.
 - Semua test kepemilikan lulus.
 
+### 6.8 Modul Classroom, Materi, dan Tugas
+
+**Tujuan:** Mendukung pembelajaran terstruktur tanpa mengubah folder personal menjadi konten bersama.
+
+**Fitur:**
+
+- Teacher/Admin membuat classroom dan membagikan kode gabung.
+- Student bergabung dengan kode tersebut.
+- Teacher/Admin membuat folder `class_material` atau `assignment` dalam classroom.
+- Resource kelas berupa tautan atau berkas PDF/Office.
+- Student mengumpulkan jawaban teks, URL, atau berkas tugas.
+- Submission menyimpan status, nilai, dan feedback pengajar.
+
+**Aturan privasi dan bisnis:**
+
+- Registrasi publik selalu menghasilkan role `student`; role pengajar/admin tidak dapat dipilih dari form registrasi.
+- Folder `private` hanya terlihat pemilik, termasuk jika pemilik adalah student.
+- Teacher/Admin hanya dapat mengelola classroom yang ia buat.
+- Student hanya dapat membaca materi dan tugas classroom yang telah diikuti.
+- Student hanya dapat melihat submission miliknya; pengajar hanya dapat melihat submission dari classroom miliknya.
+- Materi dan file submission disimpan di disk privat dan dikirim melalui route yang memeriksa policy. Disk publik tidak digunakan untuk file tersebut agar tautan langsung tidak melewati otorisasi.
+- Submission terlambat diterima dan ditandai `late`; setelah dinilai status menjadi `graded`.
+
+**Acceptance criteria:**
+
+- Student di luar kelas tidak dapat membaca folder, resource, atau file kelas.
+- Teacher/Admin tidak dapat membaca folder privat student.
+- Anggota kelas dapat mengunduh file materi dan student dapat mengunduh file submission miliknya.
+- Pengajar hanya dapat memberi nilai pada submission classroom yang dimilikinya.
+- Nilai di luar rentang 0–100 ditolak.
+
 ---
 
 ## 7. Role dan Hak Akses
@@ -491,11 +545,12 @@ Item berikut tidak termasuk MVP, tetapi struktur produk disiapkan untuk mendukun
 | Role | Deskripsi | Status |
 | --- | --- | --- |
 | **Guest** | Pengunjung yang belum login. Hanya dapat membuka halaman login dan registrasi. | Aktif |
-| **User** | Pengguna terdaftar. Dapat mengelola seluruh data miliknya sendiri. | Aktif |
-| **Admin** | Pengelola sistem dengan akses ke seluruh data dan manajemen pengguna. | Tidak termasuk MVP |
+| **Student** | Mengelola workspace privat, bergabung ke classroom, melihat materi, dan mengumpulkan tugas. | Aktif |
+| **Teacher** | Mengelola workspace privat dan classroom miliknya, membagikan materi/tugas, serta menilai submission murid. | Aktif |
+| **Admin** | Dapat membuat dan mengajar classroom seperti Teacher, tetapi tidak otomatis dapat melihat workspace privat pengguna lain. | Aktif |
 | **System** | Proses internal aplikasi: global scope, validasi, penyajian file, dan cascade data. | Aktif (non-aktor) |
 
-> FolderIn saat ini **tidak memiliki role admin**. Jangan mengasumsikan adanya akses administrator pada implementasi MVP.
+Registrasi publik selalu menghasilkan role `student`. Role `teacher` dan `admin` diberikan melalui proses administrasi di luar form registrasi.
 
 ### 7.2 Matriks Akses
 
@@ -506,38 +561,22 @@ Keterangan:
 - ➖ = tidak berlaku
 - 🔒 = hanya untuk data miliknya sendiri
 
-| Area/Aksi | Guest | User (pemilik) | User (bukan pemilik) | Admin (future) |
+| Area/Aksi | Guest | Student pemilik | Student lain | Teacher/Admin pemilik classroom |
 | --- | --- | --- | --- | --- |
 | Membuka halaman login | ✅ | ❌ (redirect) | ❌ (redirect) | ✅ |
 | Membuka halaman registrasi | ✅ | ❌ (redirect) | ❌ (redirect) | ✅ |
 | Registrasi akun | ✅ | ➖ | ➖ | ➖ |
 | Login | ✅ | ➖ | ➖ | ✅ |
 | Logout | ❌ | ✅ | ✅ | ✅ |
-| Melihat dashboard | ❌ | 🔒 | 🔒 (hanya data sendiri) | ✅ semua |
-| Melihat daftar folder | ❌ | 🔒 | 🔒 | ✅ semua |
-| Membuat folder | ❌ | ✅ | ✅ (folder sendiri) | ✅ |
-| Melihat detail folder | ❌ | 🔒 | ❌ | ✅ semua |
-| Mengubah folder | ❌ | 🔒 | ❌ | ✅ semua |
-| Menghapus folder | ❌ | 🔒 | ❌ | ✅ semua |
-| Melihat resource | ❌ | 🔒 | ❌ | ✅ semua |
-| Menambah resource | ❌ | 🔒 | ❌ (hanya folder sendiri) | ✅ semua |
-| Mengubah resource | ❌ | 🔒 | ❌ | ✅ semua |
-| Menghapus resource | ❌ | 🔒 | ❌ | ✅ semua |
-| Mengubah status baca | ❌ | 🔒 | ❌ | ✅ semua |
-| Memindahkan resource | ❌ | 🔒 (folder sendiri) | ❌ | ✅ semua |
-| Mencari/filter resource | ❌ | 🔒 | 🔒 (hasil sendiri) | ✅ semua |
-| Melihat catatan | ❌ | 🔒 | ❌ | ✅ semua |
-| Menambah catatan | ❌ | 🔒 | ❌ (hanya folder sendiri) | ✅ semua |
-| Mengubah catatan | ❌ | 🔒 | ❌ | ✅ semua |
-| Menghapus catatan | ❌ | 🔒 | ❌ | ✅ semua |
-| Mencari/filter catatan | ❌ | 🔒 | 🔒 (hasil sendiri) | ✅ semua |
-| Melihat foto | ❌ | 🔒 | ❌ | ✅ semua |
-| Mengunggah foto | ❌ | 🔒 | ❌ (hanya folder sendiri) | ✅ semua |
-| Mengganti foto | ❌ | 🔒 | ❌ | ✅ semua |
-| Menghapus foto | ❌ | 🔒 | ❌ | ✅ semua |
-| Mengakses file foto via URL | ❌ | 🔒 | ❌ | ✅ semua |
-| Mengelola pengguna | ❌ | ❌ | ❌ | ✅ |
-| Melihat audit log | ❌ | ❌ | ❌ | ✅ (future) |
+| Melihat folder privat | ❌ | 🔒 | ❌ | ❌ |
+| Mengelola workspace privat sendiri | ❌ | ✅ | ✅ | ✅ |
+| Melihat materi/tugas classroom | ❌ | Anggota kelas | ❌ | ✅ classroom sendiri |
+| Membuat/mengubah materi dan tugas | ❌ | ❌ | ❌ | ✅ classroom sendiri |
+| Mengumpulkan tugas | ❌ | ✅ tugas kelas | ❌ | ❌ |
+| Melihat submission sendiri | ❌ | ✅ | ❌ | ❌ |
+| Melihat dan memberi nilai submission kelas | ❌ | ❌ | ❌ | ✅ classroom sendiri |
+| Mengunduh materi/submission privat | ❌ | Anggota/pemilik | ❌ | ✅ classroom sendiri |
+| Mengelola akun lintas sistem | ❌ | ❌ | ❌ | ❌ (belum tersedia) |
 
 ### 7.3 Mekanisme Otorisasi
 
@@ -546,12 +585,12 @@ flowchart TD
     A["Request pengguna"] --> B{"Sudah login?"}
     B -- "Tidak" --> C["Redirect ke /login"]
     B -- "Ya" --> D["Query model Eloquent"]
-    D --> E{"Global scope:<br/>folder.user_id = auth.id?"}
-    E -- "Tidak" --> F["Data tidak ditemukan<br/>404 / redirect"]
-    E -- "Ya" --> G["Data boleh dibaca"]
+    D --> E{"Folder privat milik user<br/>atau classroom boleh diakses?"}
+    E -- "Tidak" --> F["Data tidak ditemukan<br/>404 / akses ditolak"]
+    E -- "Ya" --> G["Policy memeriksa aksi"]
     G --> H{"Request mengubah data<br/>dan mengirim folder_id?"}
     H -- "Tidak" --> I["Lanjutkan operasi"]
-    H -- "Ya" --> J{"exists folders.id<br/>where user_id = auth.id?"}
+    H -- "Ya" --> J{"Folder tujuan dapat diakses<br/>dan aksi diizinkan?"}
     J -- "Tidak" --> K["Validation error:<br/>folder tidak valid"]
     J -- "Ya" --> L["Simpan perubahan"]
     I --> M["Response"]
@@ -562,9 +601,11 @@ Prinsip utama:
 
 1. **Deny by default** — route aplikasi tertutup untuk guest.
 2. **Ownership by relation** — data anak mengikuti pemilik folder.
-3. **Validate foreign key ownership** — `folder_id` tidak cukup hanya `exists`, tetapi harus milik pengguna.
-4. **Serve files through authorization** — file foto tidak diekspos sebagai URL publik.
-5. **Least privilege** — tidak ada role admin pada MVP.
+3. **Privacy by default** — folder privat student hanya dapat diakses pemilik.
+4. **Class membership** — materi hanya terlihat guru pemilik classroom dan student terdaftar.
+5. **Validate foreign key ownership** — `folder_id` harus berada dalam scope akses dan aksi diizinkan policy.
+6. **Serve files through authorization** — foto, materi, dan submission disajikan setelah otorisasi.
+7. **Least privilege** — role Admin tidak memberi akses ke folder privat orang lain.
 
 ---
 
@@ -706,15 +747,20 @@ flowchart LR
 ```mermaid
 erDiagram
     USERS ||--o{ FOLDERS : "memiliki"
+    USERS ||--o{ CLASSROOMS : "mengajar"
+    USERS }o--o{ CLASSROOMS : "mengikuti"
     FOLDERS ||--o{ RESOURCES : "berisi"
     FOLDERS ||--o{ NOTES : "berisi"
     FOLDERS ||--o{ PHOTOS : "berisi"
+    FOLDERS ||--o{ SUBMISSIONS : "menerima"
+    USERS ||--o{ SUBMISSIONS : "mengumpulkan"
 
     USERS {
         bigint id PK
         string name
         string email UK
         string password
+        enum role
         string remember_token
         timestamp email_verified_at
         timestamp created_at
@@ -724,6 +770,9 @@ erDiagram
     FOLDERS {
         bigint id PK
         bigint user_id FK "nullable, pemilik"
+        bigint classroom_id FK "nullable, classroom"
+        enum visibility
+        datetime due_date
         string name
         text description
         string color_code
@@ -735,10 +784,42 @@ erDiagram
         bigint id PK
         bigint folder_id FK
         string title
-        text url
+        text url "nullable"
+        string file_path "nullable"
         enum resource_type
         text notes
         enum read_status
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    CLASSROOMS {
+        bigint id PK
+        string name
+        string code UK
+        text description
+        bigint teacher_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    CLASSROOM_USER {
+        bigint classroom_id FK
+        bigint user_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    SUBMISSIONS {
+        bigint id PK
+        bigint folder_id FK
+        bigint student_id FK
+        text submission_text
+        string file_path
+        text submitted_url
+        int grade
+        text teacher_feedback
+        enum status
         timestamp created_at
         timestamp updated_at
     }
@@ -781,9 +862,12 @@ erDiagram
 
 | Tabel | Kolom | Nilai |
 | --- | --- | --- |
-| `resources` | `resource_type` | `documentation`, `article`, `repository`, `video`, `other` |
+| `users` | `role` | `admin`, `teacher`, `student` |
+| `folders` | `visibility` | `private`, `class_material`, `assignment` |
+| `resources` | `resource_type` | `url`, `file`, `video`, `documentation`, `assignment_instruction` |
 | `resources` | `read_status` | `to_read`, `reading`, `completed` |
 | `notes` | `priority` | `low`, `medium`, `high` |
+| `submissions` | `status` | `submitted`, `graded`, `late` |
 
 ### 9.4 Integritas Data
 
@@ -805,7 +889,7 @@ erDiagram
 | BR-01 | Setiap folder baru otomatis dimiliki pengguna yang membuatnya |
 | BR-02 | Folder lama tanpa pemilik diklaim oleh pengguna pertama yang registrasi |
 | BR-03 | Folder pengguna kedua dan seterusnya tidak mengklaim folder lama |
-| BR-04 | Resource, catatan, dan foto hanya boleh berada di folder milik pengguna |
+| BR-04 | Resource, catatan, dan foto personal hanya boleh berada di folder privat milik pengguna |
 | BR-05 | Menghapus folder menghapus seluruh data anak |
 | BR-06 | Resource dapat dipindahkan hanya ke folder milik pengguna yang sama |
 | BR-07 | Status baca resource dapat diubah kapan saja |
@@ -817,6 +901,16 @@ erDiagram
 | BR-13 | Nama folder dan judul resource/catatan/foto maksimal 255 karakter |
 | BR-14 | URL resource harus valid dan maksimal 2.048 karakter |
 | BR-15 | Foto maksimal 5 MB dan hanya format gambar yang didukung |
+| BR-16 | Folder privat hanya dapat diakses pemiliknya; role admin tidak menjadi jalan pintas |
+| BR-17 | Folder classroom hanya dapat diakses teacher pemilik dan student terdaftar |
+| BR-18 | Teacher/admin hanya dapat mengelola classroom yang dibuatnya |
+| BR-19 | Submission tugas hanya dibuat student terdaftar; grading hanya oleh teacher/admin classroom |
+| BR-20 | Grade berupa integer 0–100; file materi dan submission disajikan setelah otorisasi |
+| BR-21 | Submission setelah tenggat diterima dengan status `late`; grading mengubah status menjadi `graded` |
+| BR-22 | Admin dapat mengubah role, membuat password sementara, menghapus akun yang tidak memiliki data terkait, dan melihat audit tindakannya |
+| BR-23 | Admin tidak dapat mengubah role sendiri, menghapus akun sendiri, atau menghapus satu-satunya akun admin |
+| BR-24 | Akun dengan folder, classroom yang diajar, membership classroom, atau submission tidak dapat dihapus |
+| BR-25 | Password sementara hanya ditampilkan setelah reset dan tidak pernah dicatat di audit log |
 
 ### 10.2 Validasi Input
 
@@ -957,6 +1051,8 @@ Contoh:
 | UAT-24 | Buka `/photos` | Halaman daftar foto tampil | ✅ |
 | UAT-25 | Buka `/resources/{id}` | Halaman detail resource tampil | ✅ |
 | UAT-26 | Hapus folder berisi foto | File foto ikut terhapus | ✅ |
+| UAT-27 | Login tanpa Remember me | Cookie session tidak memiliki masa berlaku persisten | ✅ |
+| UAT-28 | Login dengan Remember me | Recaller cookie memiliki masa berlaku persisten | ✅ |
 
 ### 12.2 Definisi "Selesai" (Definition of Done)
 
@@ -979,6 +1075,8 @@ Sebuah fitur dianggap selesai jika:
 | Modul | Backend | UI | Catatan |
 | --- | --- | --- | --- |
 | Autentikasi | ✅ | ✅ | Registrasi, login, logout, throttle |
+| Ganti kata sandi | ✅ | ✅ | Wajib verifikasi kata sandi saat ini; sesi lain diakhiri |
+| Sesi login | ✅ | ✅ | Tanpa remember me memakai cookie sesi browser; cookie remember me persisten |
 | Dashboard | ✅ | ✅ | Statistik folder dan resource |
 | Folder CRUD | ✅ | ✅ | Lengkap |
 | Resource CRUD | ✅ | ✅ | Index/create/edit/detail lengkap |
@@ -999,10 +1097,10 @@ Sebuah fitur dianggap selesai jika:
 
 ### 13.2 Gap yang Diketahui
 
-1. Belum ada role admin.
-2. Belum ada reset password, verifikasi email, dan manajemen profil.
-3. Test CRUD dan test akses file foto belum lengkap.
-4. `phpunit.xml` memakai SQLite in-memory, sedangkan environment pengembangan saat ini belum memiliki `pdo_sqlite`; test bawaan gagal dengan `could not find driver`. Suite sudah diverifikasi lulus memakai database MySQL terpisah (6 test, 18 assertion).
+1. Panel admin mencatat tindakan perubahan role, reset password, dan penghapusan akun; audit aktivitas umum belum tersedia.
+2. Belum ada reset password melalui email, verifikasi email, dan manajemen profil.
+3. Test CRUD dan test akses file foto/LMS belum mencakup seluruh skenario.
+4. `phpunit.xml` memakai SQLite in-memory, sedangkan environment pengembangan saat ini belum mengaktifkan `pdo_sqlite` secara default. Suite dapat dijalankan dengan memuat DLL SQLite untuk proses PHPUnit.
 5. File foto lama yang sudah terlanjur orphan sebelum perbaikan belum dibersihkan otomatis; perlu job/skrip pembersihan sekali jalan.
 6. Ikon Font Awesome masih dimuat dari CDN.
 
@@ -1029,11 +1127,11 @@ Sebuah fitur dianggap selesai jika:
 
 ## 15. Roadmap
 
-### Fase 1 — Stabilisasi MVP
+### Fase 1 — Stabilisasi LMS
 
 - Menambahkan smoke test seluruh route.
 - Menambahkan test CRUD.
-- Menambahkan test akses file foto.
+- Menambahkan test akses file personal, materi kelas, dan submission.
 - Memperbaiki konfigurasi test agar konsisten (aktifkan `pdo_sqlite` atau pakai MySQL test database).
 - Menambahkan skrip pembersihan file foto orphan dari data lama.
 
@@ -1051,7 +1149,6 @@ Sebuah fitur dianggap selesai jika:
 
 ### Fase 3 — Kolaborasi dan Skala
 
-- Role admin dan panel moderasi.
 - Berbagi folder dengan tautan.
 - Kolaborator dan permission granular.
 - Komentar.
@@ -1113,6 +1210,7 @@ Sebuah fitur dianggap selesai jika:
 | FR-24 Flash message | `partials/flash-messages.blade.php` |
 | FR-25 All Resources | `resources/index.blade.php` |
 | FR-26 s.d. FR-28 View daftar/detail | `notes/index`, `notes/show`, `photos/index`, `photos/show`, `resources/show` |
+| FR-31, FR-42 Administrasi akun | `AdminUserController`, `AdminAuditLogController`, `admin/users/index.blade.php`, `admin/audit-logs/index.blade.php` |
 
 ## Lampiran B — Referensi Dokumen
 

@@ -23,10 +23,18 @@ class UpdateResourceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'folder_id' => ['required', 'integer', Rule::exists('folders', 'id')->where('user_id', $this->user()->id)],
+            'folder_id' => [
+                'required',
+                'integer',
+                Rule::exists('folders', 'id')
+                    ->where('user_id', $this->user()->id)
+                    ->whereNull('classroom_id')
+                    ->where('visibility', 'private'),
+            ],
             'title' => ['required', 'string', 'max:255'],
-            'url' => ['required', 'url', 'max:2048'],
-            'resource_type' => ['required', Rule::in(['documentation', 'article', 'repository', 'video', 'other'])],
+            'url' => ['nullable', 'required_unless:resource_type,file', 'url', 'max:2048'],
+            'file' => ['nullable', 'required_if:resource_type,file', 'file', 'mimes:pdf,doc,docx,ppt,pptx', 'max:20480'],
+            'resource_type' => ['required', Rule::in(['url', 'file', 'video', 'documentation', 'assignment_instruction'])],
             'notes' => ['nullable', 'string', 'max:5000'],
             'read_status' => ['required', Rule::in(['to_read', 'reading', 'completed'])],
         ];
@@ -61,7 +69,7 @@ class UpdateResourceRequest extends FormRequest
             'folder_id.exists' => 'The selected folder does not exist.',
             'title.required' => 'The resource title is required.',
             'title.max' => 'The resource title must not exceed 255 characters.',
-            'url.required' => 'The resource URL is required.',
+            'url.required_unless' => 'Enter a resource URL or choose a file resource.',
             'url.url' => 'Please enter a valid URL (e.g., https://example.com).',
             'url.max' => 'The URL must not exceed 2048 characters.',
             'resource_type.required' => 'Please select a resource type.',

@@ -23,7 +23,8 @@ class StorePhotoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'folder_id' => ['required', 'integer', Rule::exists('folders', 'id')->where('user_id', $this->user()->id)],
+            'folder_id' => ['required', 'integer', Rule::exists('folders', 'id')
+                ->where('user_id', $this->user()->id)->whereNull('classroom_id')->where('visibility', 'private')],
             'title' => ['required', 'string', 'max:255'],
             'photo' => ['required', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'], // Max 5MB
             'description' => ['nullable', 'string', 'max:1000'],

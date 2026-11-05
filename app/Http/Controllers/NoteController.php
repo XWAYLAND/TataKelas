@@ -18,7 +18,8 @@ class NoteController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = Note::with('folder');
+        $query = Note::with('folder')
+            ->whereHas('folder', fn ($folderQuery) => $folderQuery->whereNull('classroom_id'));
 
         // Search filter
         if ($request->filled('search')) {
@@ -40,7 +41,7 @@ class NoteController extends Controller
         }
 
         $notes = $query->orderByDesc('created_at')->paginate(15)->withQueryString();
-        $folders = Folder::orderBy('name')->get();
+        $folders = Folder::whereNull('classroom_id')->where('user_id', $request->user()->id)->orderBy('name')->get();
 
         return view('notes.index', compact('notes', 'folders'));
     }
@@ -50,7 +51,7 @@ class NoteController extends Controller
      */
     public function create(Request $request): View
     {
-        $folders = Folder::orderBy('name')->get();
+        $folders = Folder::whereNull('classroom_id')->where('user_id', $request->user()->id)->orderBy('name')->get();
         $selectedFolderId = $request->input('folder_id');
 
         return view('notes.create', compact('folders', 'selectedFolderId'));
@@ -98,7 +99,10 @@ class NoteController extends Controller
     {
         try {
             $note = Note::findOrFail($id);
-            $folders = Folder::orderBy('name')->get();
+            $folders = Folder::whereNull('classroom_id')
+                ->where('user_id', auth()->id())
+                ->orderBy('name')
+                ->get();
 
             return view('notes.edit', compact('note', 'folders'));
         } catch (ModelNotFoundException $e) {

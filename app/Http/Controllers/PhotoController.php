@@ -21,7 +21,8 @@ class PhotoController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = Photo::with('folder');
+        $query = Photo::with('folder')
+            ->whereHas('folder', fn ($folderQuery) => $folderQuery->whereNull('classroom_id'));
 
         // Search filter
         if ($request->filled('search')) {
@@ -38,7 +39,7 @@ class PhotoController extends Controller
         }
 
         $photos = $query->orderByDesc('created_at')->paginate(12)->withQueryString();
-        $folders = Folder::orderBy('name')->get();
+        $folders = Folder::whereNull('classroom_id')->where('user_id', $request->user()->id)->orderBy('name')->get();
 
         return view('photos.index', compact('photos', 'folders'));
     }
@@ -48,7 +49,7 @@ class PhotoController extends Controller
      */
     public function create(Request $request): View
     {
-        $folders = Folder::orderBy('name')->get();
+        $folders = Folder::whereNull('classroom_id')->where('user_id', $request->user()->id)->orderBy('name')->get();
         $selectedFolderId = $request->input('folder_id');
 
         return view('photos.create', compact('folders', 'selectedFolderId'));
@@ -129,7 +130,10 @@ class PhotoController extends Controller
     {
         try {
             $photo = Photo::findOrFail($id);
-            $folders = Folder::orderBy('name')->get();
+            $folders = Folder::whereNull('classroom_id')
+                ->where('user_id', auth()->id())
+                ->orderBy('name')
+                ->get();
 
             return view('photos.edit', compact('photo', 'folders'));
         } catch (ModelNotFoundException $e) {

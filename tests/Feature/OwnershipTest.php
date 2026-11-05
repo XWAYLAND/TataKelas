@@ -46,7 +46,7 @@ class OwnershipTest extends TestCase
             'folder_id' => $otherFolder->id,
             'title' => 'Private resource',
             'url' => 'https://example.com',
-            'resource_type' => 'article',
+            'resource_type' => 'url',
             'read_status' => 'to_read',
         ]);
 
@@ -78,7 +78,7 @@ class OwnershipTest extends TestCase
                 'folder_id' => $otherFolder->id,
                 'title' => 'Attempted resource',
                 'url' => 'https://example.com',
-                'resource_type' => 'article',
+                'resource_type' => 'url',
                 'read_status' => 'to_read',
             ])
             ->assertSessionHasErrors('folder_id');

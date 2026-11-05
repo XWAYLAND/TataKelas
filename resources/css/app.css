@@ -3,6 +3,83 @@
 /* This application toggles dark mode with a class on <html>. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* DaisyUI 5 component library, driven by the TataKelas theme below. */
+@plugin "daisyui" {
+    themes: light --default, dark --prefersdark;
+}
+
+@plugin "daisyui/theme" {
+    name: "light";
+    default: true;
+    color-scheme: light;
+
+    --color-base-100: #ffffff;
+    --color-base-200: #f8fafc;
+    --color-base-300: #e2e8f0;
+    --color-base-content: #0f172a;
+
+    --color-primary: #2563eb;
+    --color-primary-content: #eff6ff;
+    --color-secondary: #7c3aed;
+    --color-secondary-content: #f5f3ff;
+    --color-accent: #0891b2;
+    --color-accent-content: #ecfeff;
+    --color-neutral: #1e293b;
+    --color-neutral-content: #f8fafc;
+
+    --color-info: #0284c7;
+    --color-info-content: #f0f9ff;
+    --color-success: #059669;
+    --color-success-content: #ecfdf5;
+    --color-warning: #d97706;
+    --color-warning-content: #fffbeb;
+    --color-error: #dc2626;
+    --color-error-content: #fef2f2;
+
+    --radius-selector: 0.75rem;
+    --radius-field: 0.625rem;
+    --radius-box: 1rem;
+    --border: 1px;
+    --depth: 0;
+    --noise: 0;
+}
+
+@plugin "daisyui/theme" {
+    name: "dark";
+    prefersdark: true;
+    color-scheme: dark;
+
+    --color-base-100: #0f172a;
+    --color-base-200: #0b1120;
+    --color-base-300: #1e293b;
+    --color-base-content: #e2e8f0;
+
+    --color-primary: #60a5fa;
+    --color-primary-content: #0b1220;
+    --color-secondary: #a78bfa;
+    --color-secondary-content: #1e1b4b;
+    --color-accent: #22d3ee;
+    --color-accent-content: #083344;
+    --color-neutral: #1e293b;
+    --color-neutral-content: #e2e8f0;
+
+    --color-info: #38bdf8;
+    --color-info-content: #082f49;
+    --color-success: #34d399;
+    --color-success-content: #052e16;
+    --color-warning: #fbbf24;
+    --color-warning-content: #451a03;
+    --color-error: #f87171;
+    --color-error-content: #450a0a;
+
+    --radius-selector: 0.75rem;
+    --radius-field: 0.625rem;
+    --radius-box: 1rem;
+    --border: 1px;
+    --depth: 0;
+    --noise: 0;
+}
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../../app/**/*.php';
@@ -13,4 +90,60 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        @apply antialiased;
+    }
+}
+
+@layer components {
+    /* A soft surface used for page sections and cards. */
+    .app-surface {
+        @apply rounded-2xl border border-base-300/80 bg-base-100 shadow-sm;
+    }
+
+    .app-muted {
+        @apply text-base-content/60;
+    }
+
+    /* Folder accent strip used on cards and detail headers. */
+    .folder-accent {
+        background: linear-gradient(90deg, var(--folder-color, #2563eb) 0%, color-mix(in oklab, var(--folder-color, #2563eb) 55%, white) 100%);
+    }
+
+    /* Pill-style tabs used on the folder detail page. */
+    .tab-pill {
+        @apply flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium text-base-content/55 transition hover:bg-base-100/70 hover:text-base-content;
+    }
+
+    .tab-pill-active {
+        @apply bg-base-100 text-primary shadow-sm hover:bg-base-100 hover:text-primary;
+    }
+}
+
+/* Keep icon-only actions comfortable to click. */
+.icon-action {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-lg text-base-content/60 transition;
+}
+
+.icon-action:hover {
+    @apply bg-base-200 text-primary;
+}
+
+.icon-action.is-danger:hover {
+    @apply bg-error/10 text-error;
+}
+
+/* Consistent focus ring for native controls. */
+.input:focus-visible,
+.select:focus-visible,
+.textarea:focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--color-primary) 45%, transparent);
+    outline-offset: 1px;
 }

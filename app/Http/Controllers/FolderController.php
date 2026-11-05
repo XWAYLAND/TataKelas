@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Folder;
 use App\Http\Requests\StoreFolderRequest;
 use App\Http\Requests\UpdateFolderRequest;
+use App\Models\Folder;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class FolderController extends Controller
 {
@@ -18,6 +19,8 @@ class FolderController extends Controller
     public function index(): View
     {
         $folders = Folder::withCount('resources')
+            ->whereNull('classroom_id')
+            ->where('user_id', auth()->id())
             ->orderByDesc('created_at')
             ->get();
 
@@ -29,6 +32,8 @@ class FolderController extends Controller
      */
     public function create(): View
     {
+        $this->authorize('create', Folder::class);
+
         return view('folders.create');
     }
 
@@ -39,7 +44,7 @@ class FolderController extends Controller
     {
         try {
             $validatedData = $request->validated();
-            
+
             // Set default color if not provided
             if (empty($validatedData['color_code'])) {
                 $validatedData['color_code'] = '#3B82F6';
@@ -74,6 +79,11 @@ class FolderController extends Controller
                 'notes',
                 'photos',
             ])->findOrFail($id);
+            $this->authorize('view', $folder);
+
+            if ($folder->classroom_id) {
+                return redirect()->route('classrooms.folders.show', [$folder->classroom_id, $folder->id]);
+            }
 
             // Only the active tab's rows are loaded, 15/12 at a time.
             $resources = $folder->resources()
@@ -96,6 +106,8 @@ class FolderController extends Controller
 
             // Get all folders for the move-resource dropdown.
             $folders = Folder::select('id', 'name')
+                ->whereNull('classroom_id')
+                ->where('user_id', auth()->id())
                 ->where('id', '!=', $id)
                 ->orderBy('name')
                 ->get();
@@ -142,6 +154,8 @@ class FolderController extends Controller
     {
         try {
             $folder = Folder::findOrFail($id);
+            $this->authorize('update', $folder);
+
             return view('folders.edit', compact('folder'));
         } catch (ModelNotFoundException $e) {
             return redirect()
@@ -157,8 +171,9 @@ class FolderController extends Controller
     {
         try {
             $folder = Folder::findOrFail($id);
+            $this->authorize('update', $folder);
             $validatedData = $request->validated();
-            
+
             // Keep existing color if not provided
             if (empty($validatedData['color_code'])) {
                 $validatedData['color_code'] = $folder->color_code;
@@ -173,6 +188,8 @@ class FolderController extends Controller
             return redirect()
                 ->route('folders.index')
                 ->with('error', 'Folder not found.');
+        } catch (AuthorizationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             return redirect()
                 ->back()
@@ -188,6 +205,7 @@ class FolderController extends Controller
     {
         try {
             $folder = Folder::findOrFail($id);
+            $this->authorize('delete', $folder);
             $folderName = $folder->name;
             $resourceCount = $folder->resources()->count();
 
@@ -200,6 +218,8 @@ class FolderController extends Controller
             return redirect()
                 ->route('folders.index')
                 ->with('error', 'Folder not found.');
+        } catch (AuthorizationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             return redirect()
                 ->back()

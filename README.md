@@ -1,8 +1,8 @@
-# FolderIn
+# TataKelas
 
-**Knowledge & Context Bookmark Manager** — aplikasi web untuk menyimpan, mengelompokkan, dan mengelola resource belajar, catatan, serta foto dalam folder privat milik masing-masing pengguna.
+**Workspace Murid & Sistem Pembelajaran** — TataKelas adalah web yang membantu murid mengatur workspace belajar pribadinya sekaligus mengikuti sistem pembelajaran berbasis classroom. Murid menyimpan folder, referensi, dan catatan secara privat; guru membagikan materi dan tugas, menerima pengumpulan, lalu memberi nilai dan feedback.
 
-FolderIn dibangun dengan Laravel 12 dan Blade. Setiap pengguna hanya dapat melihat dan mengubah data miliknya sendiri. Folder, bookmark/resource, catatan, dan foto diisolasi per akun.
+TataKelas dibangun dengan Laravel 12 dan Blade. Setiap pengguna hanya dapat melihat dan mengubah data miliknya sendiri. Folder, resource belajar, catatan, dan foto diisolasi per akun.
 
 > Dokumen kebutuhan produk tersedia di [`docs/PRD.md`](docs/PRD.md).
 
@@ -37,7 +37,7 @@ FolderIn dibangun dengan Laravel 12 dan Blade. Setiap pengguna hanya dapat melih
 
 ## Tentang Proyek
 
-Bookmark biasa hanya menyimpan tautan. FolderIn menyimpan **konteks** dari tautan tersebut: mengapa resource disimpan, sudah dibaca atau belum, catatan tambahan, serta foto pendukung seperti screenshot, diagram, atau wireframe.
+TataKelas menggabungkan dua ruang belajar: workspace privat murid untuk mengelola bahan belajarnya sendiri, dan learning system berbasis classroom untuk materi, tugas, pengumpulan, serta penilaian.
 
 Masalah yang ingin diselesaikan:
 
@@ -46,7 +46,7 @@ Masalah yang ingin diselesaikan:
 - Catatan dan screenshot tidak tersimpan bersama resource terkait.
 - Data pribadi tidak boleh terlihat oleh pengguna lain.
 
-FolderIn mengelompokkan semuanya ke dalam folder, misalnya `Laravel Development`, `JavaScript & React`, atau `UI/UX Design`.
+TataKelas mengelompokkan bahan belajar ke dalam folder, misalnya `Laravel Development`, `JavaScript & React`, classroom `Biology 101`, atau tugas per pertemuan.
 
 ## Fitur Utama
 
@@ -54,10 +54,14 @@ FolderIn mengelompokkan semuanya ke dalam folder, misalnya `Laravel Development`
 
 - Registrasi akun dengan nama, email, dan password.
 - Login dengan email dan password, termasuk opsi **Remember me**.
+- Tanpa opsi **Remember me**, cookie sesi berakhir saat browser ditutup; opsi tersebut membuat login tetap tersimpan pada perangkat pribadi.
+- Menutup tab saja tidak mengakhiri sesi browser. Perilaku memulihkan sesi saat browser dibuka kembali juga bergantung pada pengaturan browser.
+- Ganti kata sandi melalui halaman akun dengan verifikasi kata sandi saat ini.
 - Logout aman dengan invalidasi session dan regenerasi CSRF token.
 - Rate limiting login dan registrasi: maksimal **6 percobaan per menit**.
 - Password di-hash otomatis oleh Laravel.
 - Pengguna pertama yang mendaftar akan mengklaim folder lama yang belum memiliki pemilik.
+- Akun yang mendaftar mendapat role `student`; role `teacher` atau `admin` diberikan melalui proses administrasi, bukan dari form registrasi.
 
 ### Manajemen Folder
 
@@ -67,11 +71,22 @@ FolderIn mengelompokkan semuanya ke dalam folder, misalnya `Laravel Development`
 - Dashboard menampilkan kartu folder, jumlah resource, dan ringkasan statistik.
 - Halaman detail folder menampilkan tab **Resources**, **Notes**, dan **Photos** dengan pagination terpisah per tab.
 - Menghapus folder akan menghapus seluruh resource, catatan, metadata foto, dan **file fisik foto** di dalamnya.
+- Folder privat hanya dapat dilihat pemiliknya, termasuk saat pemiliknya seorang murid. Guru dan admin tidak mendapat akses ke folder privat murid.
+
+### Classroom dan LMS
+
+- Guru dan admin dapat membuat classroom dengan kode gabung.
+- Murid dapat bergabung menggunakan kode dari guru.
+- Guru/admin dapat membagikan folder materi atau tugas ke classroom.
+- Materi mendukung tautan dan file PDF/Office yang diunduh melalui route terautentikasi oleh anggota kelas.
+- Tugas memiliki instruksi dan tenggat, serta menerima jawaban teks, URL, atau file.
+- Pengumpulan terlambat tetap diterima dan diberi status `late`; guru/admin classroom memberi nilai 0–100 dan feedback.
+- File materi dan submission disimpan di disk privat, bukan URL publik.
 
 ### Manajemen Resource
 
 - Menambah bookmark/resource ke folder.
-- Jenis resource: `documentation`, `article`, `repository`, `video`, `other`.
+- Jenis resource: `url`, `file`, `video`, `documentation`, `assignment_instruction`.
 - Status baca: `to_read`, `reading`, `completed`.
 - Mengubah status baca langsung dari daftar resource.
 - Memindahkan resource ke folder lain.
@@ -115,10 +130,11 @@ FolderIn mengelompokkan semuanya ke dalam folder, misalnya `Laravel Development`
 | Role | Akses |
 | --- | --- |
 | **Guest** | Hanya dapat membuka halaman login dan registrasi. |
-| **User** | Dapat mengelola folder, resource, catatan, dan foto miliknya sendiri. |
-| **Admin** | Tidak tersedia pada MVP. |
+| **Student** | Mengelola workspace sendiri, bergabung ke classroom, melihat materi kelas, dan mengumpulkan tugas. |
+| **Teacher** | Semua akses workspace pribadi, membuat classroom, membagikan materi/tugas, melihat submission kelas, dan memberi nilai. |
+| **Admin** | Dapat menjalankan fungsi pengajaran pada classroom yang dibuatnya. Tidak otomatis dapat melihat workspace privat pengguna lain. |
 
-FolderIn menganut prinsip **least privilege**: pengguna hanya dapat mengakses data yang berada di folder miliknya. Matriks akses lengkap dan alur otorisasi tersedia di [`docs/PRD.md`](docs/PRD.md#7-role-dan-hak-akses).
+TataKelas menganut prinsip **least privilege**: konten personal hanya dapat diakses pemilik, sedangkan folder LMS hanya tersedia untuk pengajar classroom dan murid yang terdaftar. Matriks akses tersedia di [`docs/PRD.md`](docs/PRD.md#7-role-dan-hak-akses).
 
 ## Teknologi
 
@@ -128,19 +144,27 @@ FolderIn menganut prinsip **least privilege**: pengguna hanya dapat mengakses da
 | Framework | Laravel 12 |
 | Templating | Blade |
 | Database | MySQL (konfigurasi `.env` saat ini) atau SQLite |
-| Styling | Tailwind CSS 4 via Vite (fallback CDN jika build belum tersedia) |
+| Styling | Tailwind CSS 4 + DaisyUI 5 via Vite (fallback CDN jika build belum tersedia) |
 | Ikon | Font Awesome 6 (CDN) |
 | JavaScript | Vanilla JavaScript inline |
 | Build tool | Vite 6 |
 | Testing | PHPUnit 11 |
-| Penyimpanan file | Laravel Filesystem (`local` dan `public`) |
+| Penyimpanan file | Laravel Filesystem; foto, materi kelas, dan submission disimpan privat |
 | Autentikasi | Session-based Laravel Auth |
 
 > Catatan: layout memakai hasil build Vite jika `public/build/manifest.json` tersedia. Jika belum, layout otomatis memakai Tailwind CDN. Font Awesome tetap dimuat dari CDN.
 
+Antarmuka memakai **DaisyUI 5** di atas Tailwind CSS 4 dengan dua tema bawaan yang disesuaikan palet TataKelas:
+
+- Tema `light` dan `dark` diatur di `resources/css/app.css`.
+- Tombol tema menyinkronkan class `.dark` pada `<html>` (untuk varian `dark:` Tailwind) sekaligus atribut `data-theme` (untuk komponen DaisyUI).
+- Shell aplikasi memakai sidebar tetap di desktop, drawer di mobile, top bar sticky, serta dropdown pengguna.
+- Halaman autentikasi memakai layout terpisah di `resources/views/layouts/auth.blade.php`.
+- Pagination memakai view kustom DaisyUI di `resources/views/vendor/pagination/tailwind.blade.php`.
+
 ## Arsitektur Singkat
 
-FolderIn menggunakan pola MVC Laravel:
+TataKelas menggunakan pola MVC Laravel:
 
 - **Route** di `routes/web.php` membagi akses menjadi `guest` dan `auth`.
 - **Controller** menangani alur CRUD dan mengembalikan view atau redirect.
@@ -163,7 +187,7 @@ Semua data anak mengikuti pemilik folder. Jika folder tidak terlihat oleh penggu
 ## Struktur Direktori
 
 ```text
-FolderIn/
+TataKelas/
 ├── app/
 │   ├── Http/
 │   │   ├── Controllers/
@@ -186,14 +210,17 @@ FolderIn/
 ├── docs/
 │   └── PRD.md                   # Product Requirements Document
 ├── resources/
+│   ├── css/
+│   │   └── app.css              # Tailwind + konfigurasi tema DaisyUI
 │   └── views/
 │       ├── auth/                # Login dan registrasi
 │       ├── folders/             # Dashboard dan CRUD folder
-│       ├── layouts/             # Layout utama
+│       ├── layouts/             # Layout utama dan layout autentikasi
 │       ├── notes/               # Form catatan
 │       ├── partials/            # Flash message
 │       ├── photos/              # Form foto
-│       └── resources/           # Daftar dan form resource
+│       ├── resources/           # Daftar dan form resource
+│       └── vendor/pagination/   # Pagination kustom DaisyUI
 ├── routes/
 │   └── web.php
 ├── storage/
@@ -229,8 +256,8 @@ npm -v
 1. **Clone repository**
 
    ```bash
-   git clone <URL_REPOSITORY> FolderIn
-   cd FolderIn
+   git clone <URL_REPOSITORY> TataKelas
+   cd TataKelas
    ```
 
 2. **Install dependency PHP**
@@ -270,7 +297,7 @@ npm -v
    Ubah di `.env`:
 
    ```env
-   APP_NAME=FolderIn
+   APP_NAME=TataKelas
    APP_URL=http://127.0.0.1:8000
    ```
 
@@ -284,7 +311,11 @@ npm -v
    php artisan migrate
    ```
 
-8. **(Opsional) Install dependency frontend**
+8. **Atur kata sandi akun demo**
+
+   Isi `TATAKELAS_DEMO_PASSWORD` pada `.env` dengan kata sandi lokal minimal 12 karakter sebelum menjalankan seeder.
+
+9. **(Opsional) Install dependency frontend**
 
    ```bash
    npm install
@@ -302,7 +333,7 @@ npm -v
    npm run dev
    ```
 
-9. **Jalankan server**
+10. **Jalankan server**
 
    ```bash
    php artisan serve
@@ -374,13 +405,15 @@ SQLite cocok untuk demo atau pengembangan cepat.
 
 | Variabel | Contoh | Keterangan |
 | --- | --- | --- |
-| `APP_NAME` | `FolderIn` | Nama aplikasi |
+| `APP_NAME` | `TataKelas` | Nama aplikasi |
 | `APP_ENV` | `local` | Environment aplikasi |
 | `APP_DEBUG` | `true` | Tampilkan detail error; set `false` di produksi |
 | `APP_URL` | `http://127.0.0.1:8000` | URL dasar aplikasi |
 | `DB_CONNECTION` | `mysql` / `sqlite` | Driver database |
 | `DB_DATABASE` | `folderin` | Nama database atau path SQLite |
+| `TATAKELAS_DEMO_PASSWORD` | (rahasia lokal, minimal 12 karakter) | Kata sandi bersama akun demo; jangan gunakan di produksi |
 | `SESSION_DRIVER` | `database` | Media penyimpanan session |
+| `SESSION_EXPIRE_ON_CLOSE` | `true` | Cookie session berakhir saat browser ditutup |
 | `FILESYSTEM_DISK` | `local` | Disk default untuk file |
 | `QUEUE_CONNECTION` | `database` | Driver queue |
 
@@ -398,7 +431,7 @@ Akses:
 - Login: `http://127.0.0.1:8000/login`
 - Registrasi: `http://127.0.0.1:8000/register`
 
-Jika memakai Laragon, letakkan project di `C:\laragon\www\FolderIn` dan akses melalui virtual host atau `http://localhost/FolderIn/public`.
+Jika memakai Laragon, letakkan project di `C:\laragon\www\TataKelas` dan akses melalui virtual host atau `http://localhost/TataKelas/public`.
 
 Untuk pengembangan frontend dengan hot reload:
 
@@ -421,7 +454,7 @@ Perintah tersebut menjalankan `php artisan serve`, `queue:listen`, `pail`, dan `
 | `php artisan route:list` | Melihat seluruh route yang terdaftar |
 | `php artisan migrate` | Menjalankan migrasi yang belum dijalankan |
 | `php artisan migrate:fresh --seed` | Menghapus seluruh tabel, migrasi ulang, dan seeding |
-| `php artisan db:seed --class=FolderResourceSeeder` | Mengisi folder dan resource contoh |
+| `php artisan db:seed` | Mengisi akun dan data demo TataKelas |
 | `php artisan optimize:clear` | Membersihkan cache config, route, view, dan event |
 | `php artisan storage:link` | Membuat symlink storage publik (untuk foto lama) |
 | `php artisan test` | Menjalankan test suite |
@@ -446,47 +479,32 @@ php artisan storage:link
 
 ## Seeding Data Contoh
 
-`DatabaseSeeder` membuat satu akun demo:
+Seeder demo dapat dijalankan berulang kali tanpa menggandakan data. Seeder hanya boleh dijalankan pada environment `local` atau `testing` dan tidak menghapus data yang sudah ada.
+
+Atur kata sandi demo lokal di `.env` (minimal 12 karakter):
+
+```bash
+TATAKELAS_DEMO_PASSWORD=isi-dengan-kata-sandi-lokal-yang-kuat
+```
+
+Kemudian, setelah migrasi selesai:
 
 ```bash
 php artisan db:seed
 ```
 
-Data akun:
+Seeder membuat akun demo berikut; semuanya memakai kata sandi lokal yang ditentukan di `TATAKELAS_DEMO_PASSWORD`:
 
-| Field | Nilai |
+| Role | Email |
 | --- | --- |
-| Nama | Test User |
-| Email | `test@example.com` |
-| Password | `password` |
+| Admin | `admin@tatakelas.test` |
+| Guru | `guru@tatakelas.test` |
+| Murid | `murid1@tatakelas.test` |
+| Murid | `murid2@tatakelas.test` |
 
-Untuk mengisi folder dan resource contoh:
+Data contoh meliputi workspace privat per akun, resource, catatan, foto privat, satu classroom, materi, tugas dengan tenggat, serta submission berstatus menunggu dan sudah dinilai. Folder privat tetap dimiliki masing-masing pengguna dan tidak dibagikan ke guru/admin. Kode gabung classroom demo adalah `TATAKELAS`.
 
-```bash
-php artisan db:seed --class=FolderResourceSeeder
-```
-
-Seeder tersebut membuat folder:
-
-- Laravel Development
-- JavaScript & React
-- UI/UX Design
-- DevOps & Deployment
-
-Beserta 10 resource contoh.
-
-> **Penting:** jalankan `FolderResourceSeeder` **sebelum** akun pertama mendaftar. Folder hasil seeder tidak memiliki `user_id`. Pengguna pertama yang registrasi akan otomatis mengklaim folder tanpa pemilik. Jika akun pertama sudah terdaftar sebelum seeder dijalankan, folder hasil seeder tidak akan terlihat sampai `user_id`-nya diisi manual.
-
-## Akun Demo
-
-Setelah menjalankan `php artisan db:seed`, gunakan:
-
-```text
-Email    : test@example.com
-Password : password
-```
-
-Atau buat akun baru melalui halaman registrasi.
+Seeder tidak mengosongkan database. Hindari `migrate:fresh` pada database yang berisi data penting; untuk mencoba seeder, cukup jalankan `php artisan db:seed`.
 
 ## Daftar Route
 
@@ -526,6 +544,17 @@ Semua route aplikasi berada di `routes/web.php`.
 | GET | `/photos/create` | `photos.create` | Form upload foto |
 | GET | `/photos/{photo}` | `photos.show` | Detail foto |
 | GET/PUT/DELETE | `/photos/{photo}/edit`, `/photos/{photo}` | `photos.edit`, `photos.update`, `photos.destroy` | Ubah/hapus foto |
+| GET | `/classrooms` | `classrooms.index` | Daftar classroom |
+| POST | `/classrooms` | `classrooms.store` | Teacher/Admin membuat classroom |
+| POST | `/classrooms/join` | `classrooms.join` | Student bergabung dengan kode |
+| GET | `/classrooms/{classroom}` | `classrooms.show` | Materi, tugas, dan peserta classroom |
+| POST | `/classrooms/{classroom}/folders` | `classrooms.folders.store` | Buat folder materi/tugas |
+| GET | `/classrooms/{classroom}/folders/{folder}` | `classrooms.folders.show` | Detail materi/tugas |
+| POST | `/classrooms/{classroom}/folders/{folder}/resources` | `classrooms.folders.resources.store` | Tambah tautan/berkas materi |
+| POST | `/folders/{folder}/submissions` | `folders.submissions.store` | Student mengumpulkan tugas |
+| PATCH | `/submissions/{submission}/grade` | `submissions.grade` | Teacher/Admin memberi nilai dan feedback |
+| GET | `/resources/{resource}/file` | `resources.file` | Unduh resource setelah otorisasi |
+| GET | `/submissions/{submission}/file` | `submissions.file` | Unduh submission setelah otorisasi |
 
 
 
@@ -539,6 +568,7 @@ Semua route aplikasi berada di `routes/web.php`.
 | `name` | string | Nama pengguna |
 | `email` | string | Unik |
 | `password` | string | Hash password |
+| `role` | enum | `admin`, `teacher`, `student`; registrasi publik selalu `student` |
 | `remember_token` | string | Token remember me |
 | `created_at`, `updated_at` | timestamp | Waktu dibuat/diubah |
 
@@ -548,6 +578,9 @@ Semua route aplikasi berada di `routes/web.php`.
 | --- | --- | --- |
 | `id` | bigint | Primary key |
 | `user_id` | bigint nullable | Pemilik folder; nullable untuk data lama |
+| `classroom_id` | bigint nullable | Classroom pemilik folder bersama |
+| `visibility` | enum | `private`, `class_material`, `assignment` |
+| `due_date` | datetime nullable | Tenggat folder tugas |
 | `name` | string | Nama folder |
 | `description` | text nullable | Deskripsi |
 | `color_code` | string(7) | Kode hex, default `#3B82F6` |
@@ -560,11 +593,27 @@ Semua route aplikasi berada di `routes/web.php`.
 | `id` | bigint | Primary key |
 | `folder_id` | bigint | Foreign key ke folder, cascade delete |
 | `title` | string | Judul resource |
-| `url` | text | URL resource |
-| `resource_type` | enum | `documentation`, `article`, `repository`, `video`, `other` |
+| `url` | text nullable | URL resource |
+| `file_path` | string nullable | Berkas privat |
+| `resource_type` | enum | `url`, `file`, `video`, `documentation`, `assignment_instruction` |
 | `notes` | text nullable | Catatan pribadi |
 | `read_status` | enum | `to_read`, `reading`, `completed` |
 | `created_at`, `updated_at` | timestamp | Waktu dibuat/diubah |
+
+### `classrooms` dan `classroom_user`
+
+Classroom dimiliki oleh `teacher_id`; student terdaftar melalui tabel pivot `classroom_user`. Kode classroom bersifat unik untuk proses bergabung.
+
+### `submissions`
+
+Submission terkait folder tugas dan student. Satu student memiliki satu submission per tugas yang dapat diperbarui; status mencakup `submitted`, `late`, dan `graded`.
+
+| Kolom | Keterangan |
+| --- | --- |
+| `submission_text`, `file_path`, `submitted_url` | Isi submission (minimal salah satu) |
+| `grade` | Nilai integer 0–100 |
+| `teacher_feedback` | Feedback opsional |
+| `status` | `submitted`, `late`, atau `graded` |
 
 ### `notes`
 
@@ -601,10 +650,11 @@ Semua route aplikasi berada di `routes/web.php`.
 
 ### Resource
 
-- `folder_id`: wajib dan harus folder milik pengguna yang login.
+- `folder_id`: wajib dan harus folder privat milik pengguna yang login.
 - `title`: wajib, maksimal 255 karakter.
-- `url`: wajib, URL valid, maksimal 2.048 karakter.
-- `resource_type`: wajib, salah satu dari `documentation`, `article`, `repository`, `video`, `other`.
+- `url`: URL valid untuk resource tautan; dapat kosong untuk berkas.
+- `resource_type`: `url`, `file`, `video`, `documentation`, atau `assignment_instruction`.
+- `file`: opsional atau wajib sesuai jenis resource; PDF/Office maksimal 20 MB.
 - `notes`: opsional, maksimal 5.000 karakter.
 - `read_status`: wajib, salah satu dari `to_read`, `reading`, `completed`.
 
@@ -624,15 +674,13 @@ Semua route aplikasi berada di `routes/web.php`.
 
 ## Keamanan dan Isolasi Data
 
-FolderIn menerapkan beberapa lapisan perlindungan:
+TataKelas menerapkan beberapa lapisan perlindungan:
 
 1. **Middleware `auth`** melindungi seluruh route aplikasi. Pengguna yang belum login diarahkan ke halaman login.
 2. **Middleware `guest`** mencegah pengguna yang sudah login membuka halaman login/registrasi.
-3. **Global scope kepemilikan** pada `Folder`, `Resource`, `Note`, dan `Photo`:
-   - Folder dibatasi dengan `folders.user_id = auth()->id()`.
-   - Resource, catatan, dan foto dibatasi melalui relasi `folder.user_id`.
-4. **Validasi `folder_id`** memakai `Rule::exists(...)->where('user_id', auth()->id())`, sehingga pengguna tidak dapat menyisipkan data ke folder milik orang lain.
-5. **Penyajian foto privat** melalui route `photos.file` yang memakai middleware `auth` dan query model yang sudah dibatasi global scope.
+3. **Global scope dan policies** membatasi folder privat pada pemiliknya dan classroom pada teacher pemilik serta student terdaftar. Admin tidak mendapat akses tambahan ke folder privat murid.
+4. **Validasi foreign key** membatasi operasi personal ke folder privat milik pengguna; resource LMS hanya dapat dikelola teacher/admin classroom.
+5. **File privat** (foto, materi, submission) disimpan di disk local dan dilayani lewat route yang memeriksa policy, bukan melalui URL public.
 6. **CSRF token** pada semua form POST/PUT/PATCH/DELETE.
 7. **Password hashing** otomatis melalui cast `hashed` pada model `User`.
 8. **Rate limiting** login dan registrasi untuk mengurangi brute force.
@@ -685,7 +733,14 @@ Konfigurasi `phpunit.xml` memakai SQLite in-memory:
 Jika ekstensi `pdo_sqlite` belum aktif, test akan gagal dengan pesan `could not find driver`. Solusi:
 
 1. Aktifkan `extension=pdo_sqlite` di `php.ini`, lalu restart terminal; atau
-2. Ubah konfigurasi database test di `phpunit.xml` ke MySQL dan sediakan database test terpisah.
+2. Jika DLL SQLite tersedia di instalasi PHP, jalankan PHPUnit dengan ekstensi aktif hanya untuk proses tersebut:
+
+   ```powershell
+   php -d extension=pdo_sqlite -d extension=sqlite3 vendor\phpunit\phpunit\phpunit
+   ```
+
+   Jalankan PHPUnit langsung seperti di atas; `php artisan test` memulai proses PHP terpisah dan tidak meneruskan opsi `-d`; atau
+3. Ubah konfigurasi database test di `phpunit.xml` ke MySQL dan sediakan database test terpisah.
 
 Contoh alternatif MySQL tanpa mengubah `phpunit.xml`:
 
@@ -699,7 +754,7 @@ vendor/bin/phpunit -c phpunit.mysql.xml
 
 4. Hapus database test setelah selesai.
 
-Di lingkungan ini, suite telah diverifikasi lulus **6 test / 18 assertion** memakai database MySQL terpisah.
+Verifikasi terakhir: **11 test / 46 assertion** lulus menggunakan SQLite in-memory.
 
 ## Troubleshooting
 
@@ -749,7 +804,7 @@ php artisan view:clear
 2. Jika memakai mode pengembangan, jalankan `npm run dev`.
 3. Jalankan `php artisan optimize:clear` setelah mengubah konfigurasi atau view.
 
-### Asset Tailwind tidak tampil
+### Asset Tailwind atau DaisyUI tidak tampil
 
 Layout memakai hasil build Vite bila `public/build/manifest.json` tersedia. Jalankan:
 
@@ -758,7 +813,7 @@ npm install
 npm run build
 ```
 
-Jika build belum tersedia, layout otomatis memakai Tailwind CDN sehingga aplikasi masih dapat tampil selama ada koneksi internet. Font Awesome selalu dimuat dari CDN.
+Pastikan `daisyui` terpasang sebagai dev dependency. Jika build belum tersedia, layout otomatis memakai Tailwind CDN sehingga aplikasi masih dapat tampil selama ada koneksi internet, tetapi komponen DaisyUI memerlukan hasil build Vite. Font Awesome selalu dimuat dari CDN.
 
 ## Optimasi Performa
 
@@ -767,7 +822,7 @@ Jika build belum tersedia, layout otomatis memakai Tailwind CDN sehingga aplikas
 - **Pagination per tab**: tab Resources, Notes, dan Photos memuat 15/12/12 baris per halaman, sehingga folder besar tidak memuat seluruh data sekaligus.
 - **Indeks database**: ditambahkan indeks komposit untuk `folders(user_id, created_at)`, `resources(folder_id, created_at)`, `notes(folder_id, created_at)`, dan `photos(folder_id, created_at)`, serta indeks filter `resource_type`, `read_status`, dan `priority`.
 - **Query lebih ringan**: dropdown pindah resource hanya mengambil kolom `id` dan `name`.
-- **Asset produksi**: Tailwind dikompilasi dan diminifikasi oleh Vite (sekitar 13 KB gzip), dengan fallback CDN hanya jika build belum tersedia.
+- **Asset produksi**: Tailwind CSS dan DaisyUI dikompilasi serta diminifikasi oleh Vite (sekitar 28 KB gzip), dengan fallback CDN hanya jika build belum tersedia.
 - **Gambar**: foto pada daftar dan tab folder memakai `loading="lazy"` agar gambar di luar viewport tidak langsung diunduh.
 - **Filter tetap aktif saat berpindah halaman**: paginator memakai `withQueryString()`.
 
@@ -788,20 +843,21 @@ Jika build belum tersedia, layout otomatis memakai Tailwind CDN sehingga aplikas
 | CRUD catatan | Selesai, termasuk halaman daftar dan detail |
 | CRUD foto | Selesai, termasuk halaman daftar dan detail |
 | Penyajian foto privat | Selesai |
+| Ganti kata sandi | Selesai, dengan verifikasi kata sandi saat ini |
 | Pembersihan file foto saat folder dihapus | Selesai |
 | Isolasi data per pengguna | Selesai |
 | Dark mode dan responsivitas | Selesai |
 | Optimasi query, pagination, dan indeks database | Selesai |
-| Build asset Tailwind via Vite | Selesai |
+| Build asset Tailwind + DaisyUI via Vite | Selesai |
 | Test kepemilikan data | Tersedia |
 
 ### Belum lengkap
 
-1. **Belum ada role admin**
-   - Saat ini hanya ada dua peran: **Guest** dan **User**.
-   - Tidak ada panel admin, manajemen pengguna, atau moderasi konten.
+1. **Belum ada panel admin sistem**
+   - Peran aplikasi: **Student**, **Teacher**, dan **Admin**; admin dapat mengajar classroom yang dibuatnya.
+   - Belum ada panel admin sistem untuk manajemen pengguna lintas classroom atau moderasi konten.
 
-2. **Belum ada fitur akun lanjutan**
+2. **Fitur akun lanjutan belum lengkap**
    - Verifikasi email.
    - Lupa/reset password.
    - Ubah profil.
@@ -809,7 +865,7 @@ Jika build belum tersedia, layout otomatis memakai Tailwind CDN sehingga aplikas
    - Two-factor authentication.
 
 3. **Ketergantungan CDN untuk ikon**
-   - Tailwind sudah dikompilasi melalui Vite.
+   - Tailwind CSS dan DaisyUI sudah dikompilasi melalui Vite.
    - Font Awesome masih dimuat dari CDN sehingga ikon membutuhkan koneksi internet.
 
 4. **Pencarian sederhana**
@@ -823,22 +879,22 @@ Jika build belum tersedia, layout otomatis memakai Tailwind CDN sehingga aplikas
    - Perubahan data tidak dicatat dalam log aktivitas pengguna.
 
 7. **Test belum mencakup seluruh modul**
-   - Test yang ada berfokus pada autentikasi dan kepemilikan data.
-   - Belum ada test CRUD lengkap untuk folder, resource, catatan, dan foto.
+   - Test yang ada mencakup autentikasi, perubahan kata sandi, kepemilikan data, dan beberapa skenario classroom/submission.
+   - Belum ada test CRUD dan test akses file yang lengkap untuk seluruh modul.
 
 8. **Konfigurasi test dan environment berbeda**
    - `.env` pengembangan memakai MySQL, sedangkan `phpunit.xml` memakai SQLite in-memory.
-   - Lingkungan pengembangan saat ini belum memiliki ekstensi `pdo_sqlite`, sehingga `php artisan test` bawaan gagal dengan pesan `could not find driver`.
+   - Lingkungan pengembangan saat ini belum memuat ekstensi `pdo_sqlite` secara default; suite dapat dijalankan dengan memuat DLL SQLite hanya untuk proses PHPUnit.
    - Suite sudah diverifikasi lulus memakai database MySQL terpisah. Aktifkan `pdo_sqlite` atau gunakan konfigurasi MySQL test untuk CI.
 
 ## Roadmap
 
-### Fase 1 — Perbaikan MVP
+### Fase 1 — Stabilisasi LMS
 
-- Menambahkan test CRUD dan test akses file foto.
+- Menambahkan test CRUD serta test akses file personal, materi kelas, dan submission.
 - Menambahkan smoke test untuk seluruh route yang memakai view.
 - Menambahkan pembersihan file orphan secara terjadwal untuk data lama.
-- Menambahkan menulis ulang test agar dapat memakai MySQL test database tanpa mengganggu data pengembangan.
+- Menata test agar dapat memakai MySQL test database tanpa mengganggu data pengembangan.
 
 ### Fase 2 — Peningkatan Produk
 
@@ -853,7 +909,7 @@ Jika build belum tersedia, layout otomatis memakai Tailwind CDN sehingga aplikas
 
 ### Fase 3 — Skala dan Kolaborasi
 
-- Role admin dan panel moderasi.
+- Panel admin sistem untuk mengelola akun lintas classroom.
 - Berbagi folder dengan tautan atau kolaborator.
 - Komentar dan activity log.
 - Penyimpanan object storage (S3-compatible).

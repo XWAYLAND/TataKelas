@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Auth;
@@ -16,9 +16,11 @@ class Photo extends Model
     protected static function booted(): void
     {
         static::addGlobalScope('owned', function (Builder $query): void {
-            if (Auth::check()) {
+            if ($user = Auth::user()) {
                 $query->whereHas('folder', fn (Builder $folderQuery) => $folderQuery
-                    ->where('user_id', Auth::id()));
+                    ->withoutGlobalScope('accessible')
+                    ->whereNull('classroom_id')
+                    ->accessibleBy($user));
             }
         });
     }
@@ -61,11 +63,11 @@ class Photo extends Model
     {
         $size = $this->file_size;
         if ($size < 1024) {
-            return $size . ' B';
+            return $size.' B';
         } elseif ($size < 1048576) {
-            return round($size / 1024, 2) . ' KB';
+            return round($size / 1024, 2).' KB';
         } else {
-            return round($size / 1048576, 2) . ' MB';
+            return round($size / 1048576, 2).' MB';
         }
     }
 

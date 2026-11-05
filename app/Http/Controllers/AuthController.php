@@ -24,7 +24,7 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (!Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
             return back()
                 ->withErrors(['email' => 'Email or password is incorrect.'])
                 ->onlyInput('email');
@@ -32,7 +32,9 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('folders.index'));
+        $defaultRoute = $request->user()->role === 'admin' ? 'admin.index' : 'folders.index';
+
+        return redirect()->intended(route($defaultRoute));
     }
 
     public function showRegistration(): View

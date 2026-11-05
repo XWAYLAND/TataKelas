@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Auth;
@@ -15,9 +15,11 @@ class Note extends Model
     protected static function booted(): void
     {
         static::addGlobalScope('owned', function (Builder $query): void {
-            if (Auth::check()) {
+            if ($user = Auth::user()) {
                 $query->whereHas('folder', fn (Builder $folderQuery) => $folderQuery
-                    ->where('user_id', Auth::id()));
+                    ->withoutGlobalScope('accessible')
+                    ->whereNull('classroom_id')
+                    ->accessibleBy($user));
             }
         });
     }
@@ -47,7 +49,7 @@ class Note extends Model
      */
     public function getPriorityBadgeColorAttribute(): string
     {
-        return match($this->priority) {
+        return match ($this->priority) {
             'high' => 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200',
             'medium' => 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200',
             'low' => 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200',
@@ -60,7 +62,7 @@ class Note extends Model
      */
     public function getPriorityIconAttribute(): string
     {
-        return match($this->priority) {
+        return match ($this->priority) {
             'high' => 'fa-exclamation-circle',
             'medium' => 'fa-info-circle',
             'low' => 'fa-check-circle',

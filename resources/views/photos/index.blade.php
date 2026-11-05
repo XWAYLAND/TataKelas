@@ -3,142 +3,115 @@
 @section('title', 'All Photos')
 
 @section('content')
-<div class="mb-8">
-    <!-- Header -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">
-                <i class="fas fa-image text-purple-600 dark:text-purple-400"></i> All Photos
-            </h1>
-            <p class="text-gray-600 dark:text-gray-400">Browse and filter all your uploaded photos</p>
-        </div>
-        <div class="mt-4 md:mt-0">
-            <a href="{{ route('photos.create') }}" class="bg-purple-600 dark:bg-purple-500 text-white px-6 py-3 rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition shadow-md inline-block">
-                <i class="fas fa-upload mr-2"></i> Upload Photo
+    <div class="space-y-6">
+        <!-- Page heading -->
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-secondary">Gallery</p>
+                <h1 class="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">All Photos</h1>
+                <p class="mt-2 text-sm text-base-content/60">Every screenshot, diagram, and reference image you have uploaded.</p>
+            </div>
+            <a href="{{ route('photos.create') }}" class="btn btn-secondary">
+                <i class="fas fa-upload"></i> Upload Photo
             </a>
         </div>
-    </div>
 
-    <!-- Filters -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 dark-mode-transition">
-        <form action="{{ route('photos.index') }}" method="GET" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="md:col-span-2">
-                    <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        <i class="fas fa-search"></i> Search
-                    </label>
-                    <input
-                        type="text"
-                        name="search"
-                        id="search"
-                        value="{{ request('search') }}"
-                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="Search by title or description..."
-                    >
+        <!-- Filters -->
+        <section class="app-surface p-5">
+            <form action="{{ route('photos.index') }}" method="GET" class="space-y-4">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+                    <div class="md:col-span-2">
+                        <label for="search" class="mb-2 block text-sm font-medium">Search</label>
+                        <label class="input input-bordered flex w-full items-center gap-2">
+                            <i class="fas fa-magnifying-glass text-xs text-base-content/40"></i>
+                            <input type="text" name="search" id="search" value="{{ request('search') }}" class="grow" placeholder="Search by title or description...">
+                        </label>
+                    </div>
+
+                    <div>
+                        <label for="folder_id" class="mb-2 block text-sm font-medium">Folder</label>
+                        <select name="folder_id" id="folder_id" class="select select-bordered w-full">
+                            <option value="">All folders</option>
+                            @foreach($folders as $folder)
+                                <option value="{{ $folder->id }}" {{ request('folder_id') == $folder->id ? 'selected' : '' }}>{{ $folder->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="flex items-end gap-2">
+                        <button type="submit" class="btn btn-secondary flex-1"><i class="fas fa-filter"></i> Apply</button>
+                        <a href="{{ route('photos.index') }}" class="btn btn-ghost border-base-300" title="Reset filters"><i class="fas fa-rotate-left"></i></a>
+                    </div>
                 </div>
+            </form>
+        </section>
 
+        <!-- Results -->
+        <section class="app-surface overflow-hidden">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-base-300/70 p-5">
                 <div>
-                    <label for="folder_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        <i class="fas fa-folder"></i> Folder
-                    </label>
-                    <select name="folder_id" id="folder_id" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                        <option value="">All Folders</option>
-                        @foreach($folders as $folder)
-                            <option value="{{ $folder->id }}" {{ request('folder_id') == $folder->id ? 'selected' : '' }}>
-                                {{ $folder->name }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <h2 class="text-lg font-semibold">Photos <span class="text-base-content/40">({{ $photos->total() }})</span></h2>
+                    <p class="text-xs text-base-content/50">Sorted by the most recently uploaded.</p>
                 </div>
-
-                <div class="flex items-end space-x-3">
-                    <button type="submit" class="px-6 py-2 bg-purple-600 dark:bg-purple-500 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition shadow-md">
-                        <i class="fas fa-filter mr-2"></i> Apply
-                    </button>
-                    <a href="{{ route('photos.index') }}" class="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                        <i class="fas fa-redo mr-2"></i> Reset
-                    </a>
-                </div>
-            </div>
-        </form>
-    </div>
-
-    <!-- Results -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden dark-mode-transition">
-        <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-            <h2 class="text-xl font-semibold text-gray-800 dark:text-white">
-                Photos ({{ $photos->total() }})
-            </h2>
-            @if(request()->hasAny(['search', 'folder_id']))
-                <span class="text-sm text-gray-600 dark:text-gray-400">
-                    <i class="fas fa-filter text-purple-600 dark:text-purple-400"></i> Filtered
-                </span>
-            @endif
-        </div>
-
-        @if($photos->isEmpty())
-            <div class="p-12 text-center">
-                <i class="fas fa-image text-gray-300 dark:text-gray-600 text-5xl mb-4"></i>
-                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No Photos Found</h3>
-                <p class="text-gray-500 dark:text-gray-400 mb-6">
-                    @if(request()->hasAny(['search', 'folder_id']))
-                        Try adjusting your filters or search terms
-                    @else
-                        Start uploading photos to keep them organized
-                    @endif
-                </p>
-                @if(!request()->hasAny(['search', 'folder_id']))
-                    <a href="{{ route('photos.create') }}" class="bg-purple-600 dark:bg-purple-500 text-white px-6 py-2.5 rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition shadow-md inline-block">
-                        <i class="fas fa-upload mr-2"></i> Upload First Photo
-                    </a>
+                @if(request()->hasAny(['search', 'folder_id']))
+                    <span class="badge border-0 bg-secondary/15 text-secondary"><i class="fas fa-filter mr-1"></i> Filtered</span>
                 @endif
             </div>
-        @else
-            <div class="p-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                @foreach($photos as $photo)
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-xl transition group border border-gray-100 dark:border-gray-700">
-                        <a href="{{ route('photos.show', $photo->id) }}" class="block aspect-square overflow-hidden bg-gray-100 dark:bg-gray-900">
-                            <img src="{{ $photo->url }}" alt="{{ $photo->title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition duration-300">
-                        </a>
-                        <div class="p-3">
-                            <h4 class="font-semibold text-gray-900 dark:text-white text-sm truncate mb-1">
-                                <a href="{{ route('photos.show', $photo->id) }}" class="hover:text-purple-600 dark:hover:text-purple-400">{{ $photo->title }}</a>
-                            </h4>
-                            <a href="{{ route('folders.show', $photo->folder_id) }}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium text-white mb-2 hover:opacity-80 transition" style="background-color: {{ $photo->folder->color_code }};">
-                                <i class="fas fa-folder mr-1"></i> {{ $photo->folder->name }}
+
+            @if($photos->isEmpty())
+                <div class="flex flex-col items-center px-6 py-16 text-center">
+                    <span class="grid h-16 w-16 place-items-center rounded-2xl bg-base-200 text-2xl text-base-content/30"><i class="fas fa-image"></i></span>
+                    <h3 class="mt-4 font-semibold">No photos found</h3>
+                    <p class="mt-1 max-w-sm text-sm text-base-content/55">
+                        @if(request()->hasAny(['search', 'folder_id']))
+                            Try adjusting your filters or search terms.
+                        @else
+                            Start uploading photos to keep them organized.
+                        @endif
+                    </p>
+                    @if(!request()->hasAny(['search', 'folder_id']))
+                        <a href="{{ route('photos.create') }}" class="btn btn-secondary mt-5"><i class="fas fa-upload"></i> Upload First Photo</a>
+                    @endif
+                </div>
+            @else
+                <div class="grid grid-cols-2 gap-4 p-5 md:grid-cols-3 xl:grid-cols-4">
+                    @foreach($photos as $photo)
+                        <article class="group overflow-hidden rounded-xl border border-base-300/80 bg-base-100 transition hover:shadow-md">
+                            <a href="{{ route('photos.show', $photo->id) }}" class="block aspect-square overflow-hidden bg-base-200">
+                                <img src="{{ $photo->url }}" alt="{{ $photo->title }}" loading="lazy" class="h-full w-full object-cover transition duration-300 group-hover:scale-105">
                             </a>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ $photo->formatted_size }}</p>
-                            <div class="flex justify-between items-center">
-                                <a href="{{ $photo->url }}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-xs" title="View Full Size">
-                                    <i class="fas fa-expand-alt"></i>
+                            <div class="p-3">
+                                <h4 class="truncate text-sm font-semibold">
+                                    <a href="{{ route('photos.show', $photo->id) }}" class="hover:text-secondary">{{ $photo->title }}</a>
+                                </h4>
+                                <a href="{{ route('folders.show', $photo->folder_id) }}" class="mt-1.5 inline-flex items-center gap-1 text-xs text-base-content/50 hover:text-primary">
+                                    <span class="h-2 w-2 rounded-full" style="background-color: {{ $photo->folder->color_code }};"></span>
+                                    {{ $photo->folder->name }}
                                 </a>
-                                <div class="flex space-x-3">
-                                    <a href="{{ route('photos.show', $photo->id) }}" class="text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 text-xs" title="View">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a href="{{ route('photos.edit', $photo->id) }}" class="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 text-xs" title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <form action="{{ route('photos.destroy', $photo->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this photo?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-xs" title="Delete">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
+                                <p class="mt-1 text-xs text-base-content/40">{{ $photo->formatted_size }}</p>
+                                <div class="mt-3 flex items-center justify-between">
+                                    <a href="{{ $photo->url }}" target="_blank" rel="noopener noreferrer" class="icon-action" title="View full size"><i class="fas fa-expand text-xs"></i></a>
+                                    <div class="flex items-center gap-1">
+                                        <a href="{{ route('photos.show', $photo->id) }}" class="icon-action" title="View photo"><i class="fas fa-eye text-xs"></i></a>
+                                        <a href="{{ route('photos.edit', $photo->id) }}" class="icon-action" title="Edit photo"><i class="fas fa-pen text-xs"></i></a>
+                                        <form action="{{ route('photos.destroy', $photo->id) }}" method="POST" onsubmit="return confirm('Delete this photo?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="icon-action is-danger" title="Delete photo"><i class="fas fa-trash text-xs"></i></button>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-
-            @if($photos->hasPages())
-                <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-                    {{ $photos->links() }}
+                        </article>
+                    @endforeach
                 </div>
+
+                @if($photos->hasPages())
+                    <div class="border-t border-base-300/70 px-5 py-4">
+                        {{ $photos->links() }}
+                    </div>
+                @endif
             @endif
-        @endif
+        </section>
     </div>
-</div>
 @endsection
