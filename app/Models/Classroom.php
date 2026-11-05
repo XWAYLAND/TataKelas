@@ -28,8 +28,24 @@ class Classroom extends Model
         return $this->belongsToMany(User::class)->withTimestamps();
     }
 
+    public function coTeachers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'classroom_co_teacher')->withTimestamps();
+    }
+
     public function folders(): HasMany
     {
         return $this->hasMany(Folder::class);
+    }
+
+    public function isOwnedBy(User $user): bool
+    {
+        return (int) $this->teacher_id === (int) $user->id;
+    }
+
+    public function hasTeacherAccess(User $user): bool
+    {
+        return $this->isOwnedBy($user)
+            || $this->coTeachers()->whereKey($user->id)->exists();
     }
 }

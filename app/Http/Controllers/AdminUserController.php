@@ -77,9 +77,12 @@ class AdminUserController extends Controller
             if (
                 $validated['role'] === 'student'
                 && in_array($target->role, ['teacher', 'admin'], true)
-                && DB::table('classrooms')->where('teacher_id', $target->id)->exists()
+                && (
+                    DB::table('classrooms')->where('teacher_id', $target->id)->exists()
+                    || DB::table('classroom_co_teacher')->where('user_id', $target->id)->exists()
+                )
             ) {
-                return 'Role tidak dapat diubah menjadi student selama akun ini masih mengelola classroom.';
+                return 'Role tidak dapat diubah menjadi student selama akun ini masih mengelola atau ikut mengajar classroom.';
             }
 
             if ($target->role === $validated['role']) {
@@ -172,9 +175,10 @@ class AdminUserController extends Controller
         $hasFolders = DB::table('folders')->where('user_id', $user->id)->exists();
         $teachesClassrooms = DB::table('classrooms')->where('teacher_id', $user->id)->exists();
         $isClassroomMember = DB::table('classroom_user')->where('user_id', $user->id)->exists();
+        $isCoTeacher = DB::table('classroom_co_teacher')->where('user_id', $user->id)->exists();
         $hasSubmissions = DB::table('submissions')->where('student_id', $user->id)->exists();
 
-        if ($hasFolders || $teachesClassrooms || $isClassroomMember || $hasSubmissions) {
+        if ($hasFolders || $teachesClassrooms || $isClassroomMember || $isCoTeacher || $hasSubmissions) {
             return 'Akun tidak dapat dihapus karena masih memiliki folder, classroom, keanggotaan kelas, atau submission terkait.';
         }
 

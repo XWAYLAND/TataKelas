@@ -197,12 +197,14 @@ Prioritas memakai MoSCoW: **M** = Must have, **S** = Should have, **C** = Could 
 | FR-34 | Student dapat bergabung ke classroom melalui kode | M | Dalam implementasi |
 | FR-35 | Teacher/Admin dapat membagikan folder materi dan tugas bertenggat | M | Dalam implementasi |
 | FR-36 | Student dapat mengumpulkan teks, URL, atau file; submission terlambat diberi status `late` | M | Dalam implementasi |
-| FR-37 | Teacher/Admin pemilik classroom dapat memberi nilai 0–100 dan feedback | M | Dalam implementasi |
+| FR-37 | Teacher/Admin pemilik atau co-teacher classroom dapat memberi nilai 0–100 dan feedback | M | Dalam implementasi |
 | FR-38 | Folder privat student tidak dapat dilihat oleh Teacher, Admin, atau student lain | M | Dalam implementasi |
 | FR-39 | Berkas materi/submission hanya dapat diunduh oleh pengguna yang berhak | M | Dalam implementasi |
 | FR-40 | Pengguna dapat mengganti kata sandi dengan verifikasi kata sandi saat ini | S | Selesai |
 | FR-41 | Login tanpa opsi remember me memakai cookie sesi yang berakhir saat browser ditutup | S | Selesai |
 | FR-42 | Admin mengelola akun lintas sistem dan melihat audit tindakan akun | C | Selesai |
+| FR-43 | Teacher/Admin dapat bergabung ke classroom guru lain sebagai co-teacher melalui kode kelas | M | Dalam implementasi |
+| FR-44 | Pemilik classroom dapat mengeluarkan co-teacher; co-teacher dapat keluar sendiri | M | Dalam implementasi |
 
 ### 4.4 Kebutuhan Non-Fungsional
 
@@ -275,15 +277,15 @@ Prioritas memakai MoSCoW: **M** = Must have, **S** = Should have, **C** = Could 
 - Isolasi data per pengguna.
 - Akun admin tidak memiliki akses ke workspace pribadi berupa folder, resource, catatan, atau foto; akses classroom tetap tersedia.
 - Pemisahan konten privat dan classroom; materi kelas hanya dapat dilihat pengajar dan murid terdaftar.
-- Classroom untuk teacher/admin dan pendaftaran student dengan kode.
+- Classroom untuk teacher/admin, pendaftaran student dengan kode, dan co-teacher melalui kode.
 - Folder kelas untuk materi dan tugas dengan tenggat.
 - Resource kelas berupa tautan atau berkas privat yang hanya dapat diunduh anggota kelas.
 - Submission tugas berupa teks, tautan, atau berkas.
-- Penilaian 0–100 dan feedback oleh teacher/admin pemilik classroom.
+- Penilaian 0–100 dan feedback oleh teacher/admin pemilik atau co-teacher classroom.
 - Penerimaan submission terlambat dengan penanda `late`.
 - Otorisasi berbasis role dan policy untuk folder serta submission.
 - Panel admin untuk mencari akun, mengubah role, membuat password sementara, dan melihat audit log tindakan akun.
-- Penghapusan akun ditolak selama masih ada data folder, classroom, membership kelas, atau submission terkait.
+- Penghapusan akun ditolak selama masih ada data folder, classroom, keanggotaan co-teacher/student, atau submission terkait.
 - Dark mode dan tampilan responsif.
 - Validasi form dan flash message.
 - Test dasar autentikasi dan kepemilikan data.
@@ -512,8 +514,10 @@ Item berikut tidak termasuk lingkup saat ini:
 **Fitur:**
 
 - Teacher/Admin membuat classroom dan membagikan kode gabung.
-- Student bergabung dengan kode tersebut.
-- Teacher/Admin membuat folder `class_material` atau `assignment` dalam classroom.
+- Student bergabung dengan kode tersebut sebagai anggota kelas.
+- Teacher/Admin dapat bergabung dengan kode classroom guru lain sebagai co-teacher.
+- Pemilik classroom dapat mengeluarkan co-teacher; co-teacher dapat keluar sendiri.
+- Teacher/Admin pemilik atau co-teacher membuat folder `class_material` atau `assignment` dalam classroom.
 - Resource kelas berupa tautan atau berkas PDF/Office.
 - Student mengumpulkan jawaban teks, URL, atau berkas tugas.
 - Submission menyimpan status, nilai, dan feedback pengajar.
@@ -522,9 +526,11 @@ Item berikut tidak termasuk lingkup saat ini:
 
 - Registrasi publik selalu menghasilkan role `student`; role pengajar/admin tidak dapat dipilih dari form registrasi.
 - Folder `private` hanya terlihat pemilik, termasuk jika pemilik adalah student.
-- Teacher/Admin hanya dapat mengelola classroom yang ia buat.
+- Teacher/Admin pemilik classroom dapat mengubah pengaturan classroom; co-teacher dapat mengelola konten dan penilaian, tetapi bukan kepemilikan classroom.
+- Teacher/Admin tidak dapat bergabung sebagai co-teacher pada classroom miliknya sendiri.
+- Co-teacher yang dikeluarkan pemilik atau keluar sendiri langsung kehilangan akses ke konten classroom tersebut.
 - Student hanya dapat membaca materi dan tugas classroom yang telah diikuti.
-- Student hanya dapat melihat submission miliknya; pengajar hanya dapat melihat submission dari classroom miliknya.
+- Student hanya dapat melihat submission miliknya; pengajar hanya dapat melihat submission dari classroom tempat ia menjadi pemilik atau co-teacher.
 - Materi dan file submission disimpan di disk privat dan dikirim melalui route yang memeriksa policy. Disk publik tidak digunakan untuk file tersebut agar tautan langsung tidak melewati otorisasi.
 - Submission terlambat diterima dan ditandai `late`; setelah dinilai status menjadi `graded`.
 
@@ -533,7 +539,7 @@ Item berikut tidak termasuk lingkup saat ini:
 - Student di luar kelas tidak dapat membaca folder, resource, atau file kelas.
 - Teacher/Admin tidak dapat membaca folder privat student.
 - Anggota kelas dapat mengunduh file materi dan student dapat mengunduh file submission miliknya.
-- Pengajar hanya dapat memberi nilai pada submission classroom yang dimilikinya.
+- Pengajar hanya dapat memberi nilai pada submission classroom yang ia ajar sebagai pemilik atau co-teacher.
 - Nilai di luar rentang 0–100 ditolak.
 
 ---
@@ -546,8 +552,8 @@ Item berikut tidak termasuk lingkup saat ini:
 | --- | --- | --- |
 | **Guest** | Pengunjung yang belum login. Hanya dapat membuka halaman login dan registrasi. | Aktif |
 | **Student** | Mengelola workspace privat, bergabung ke classroom, melihat materi, dan mengumpulkan tugas. | Aktif |
-| **Teacher** | Mengelola workspace privat dan classroom miliknya, membagikan materi/tugas, serta menilai submission murid. | Aktif |
-| **Admin** | Dapat membuat dan mengajar classroom seperti Teacher, tetapi tidak otomatis dapat melihat workspace privat pengguna lain. | Aktif |
+| **Teacher** | Mengelola workspace privat dan classroom miliknya, bergabung sebagai co-teacher ke classroom guru lain, membagikan materi/tugas, serta menilai submission murid. | Aktif |
+| **Admin** | Dapat membuat dan mengajar classroom seperti Teacher, termasuk bergabung sebagai co-teacher, tetapi tidak otomatis dapat melihat workspace privat pengguna lain. | Aktif |
 | **System** | Proses internal aplikasi: global scope, validasi, penyajian file, dan cascade data. | Aktif (non-aktor) |
 
 Registrasi publik selalu menghasilkan role `student`. Role `teacher` dan `admin` diberikan melalui proses administrasi di luar form registrasi.
@@ -561,22 +567,22 @@ Keterangan:
 - ➖ = tidak berlaku
 - 🔒 = hanya untuk data miliknya sendiri
 
-| Area/Aksi | Guest | Student pemilik | Student lain | Teacher/Admin pemilik classroom |
-| --- | --- | --- | --- | --- |
-| Membuka halaman login | ✅ | ❌ (redirect) | ❌ (redirect) | ✅ |
-| Membuka halaman registrasi | ✅ | ❌ (redirect) | ❌ (redirect) | ✅ |
-| Registrasi akun | ✅ | ➖ | ➖ | ➖ |
-| Login | ✅ | ➖ | ➖ | ✅ |
-| Logout | ❌ | ✅ | ✅ | ✅ |
-| Melihat folder privat | ❌ | 🔒 | ❌ | ❌ |
-| Mengelola workspace privat sendiri | ❌ | ✅ | ✅ | ✅ |
-| Melihat materi/tugas classroom | ❌ | Anggota kelas | ❌ | ✅ classroom sendiri |
-| Membuat/mengubah materi dan tugas | ❌ | ❌ | ❌ | ✅ classroom sendiri |
-| Mengumpulkan tugas | ❌ | ✅ tugas kelas | ❌ | ❌ |
-| Melihat submission sendiri | ❌ | ✅ | ❌ | ❌ |
-| Melihat dan memberi nilai submission kelas | ❌ | ❌ | ❌ | ✅ classroom sendiri |
-| Mengunduh materi/submission privat | ❌ | Anggota/pemilik | ❌ | ✅ classroom sendiri |
-| Mengelola akun lintas sistem | ❌ | ❌ | ❌ | ❌ (belum tersedia) |
+| Area/Aksi | Guest | Student pemilik | Student lain | Teacher/Admin pemilik classroom | Teacher/Admin co-teacher |
+| --- | --- | --- | --- | --- | --- |
+| Membuka halaman login | ✅ | ❌ (redirect) | ❌ (redirect) | ✅ | ✅ |
+| Membuka halaman registrasi | ✅ | ❌ (redirect) | ❌ (redirect) | ✅ | ✅ |
+| Registrasi akun | ✅ | ➖ | ➖ | ➖ | ➖ |
+| Login | ✅ | ➖ | ➖ | ✅ | ✅ |
+| Logout | ❌ | ✅ | ✅ | ✅ | ✅ |
+| Melihat folder privat | ❌ | 🔒 | ❌ | ❌ | ❌ |
+| Mengelola workspace privat sendiri | ❌ | ✅ | ✅ | ✅ | ✅ |
+| Melihat materi/tugas classroom | ❌ | Anggota kelas | ❌ | ✅ classroom sendiri | ✅ classroom yang diajar bersama |
+| Membuat/mengubah materi dan tugas | ❌ | ❌ | ❌ | ✅ classroom sendiri | ✅ classroom yang diajar bersama |
+| Mengumpulkan tugas | ❌ | ✅ tugas kelas | ❌ | ❌ | ❌ |
+| Melihat submission sendiri | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Melihat dan memberi nilai submission kelas | ❌ | ❌ | ❌ | ✅ classroom sendiri | ✅ classroom yang diajar bersama |
+| Mengunduh materi/submission privat | ❌ | Anggota/pemilik | ❌ | ✅ classroom sendiri | ✅ classroom yang diajar bersama |
+| Mengelola akun lintas sistem | ❌ | ❌ | ❌ | ❌ (belum tersedia) | ❌ (belum tersedia) |
 
 ### 7.3 Mekanisme Otorisasi
 
@@ -602,7 +608,7 @@ Prinsip utama:
 1. **Deny by default** — route aplikasi tertutup untuk guest.
 2. **Ownership by relation** — data anak mengikuti pemilik folder.
 3. **Privacy by default** — folder privat student hanya dapat diakses pemilik.
-4. **Class membership** — materi hanya terlihat guru pemilik classroom dan student terdaftar.
+4. **Class membership** — materi hanya terlihat guru pemilik, co-teacher, dan student terdaftar.
 5. **Validate foreign key ownership** — `folder_id` harus berada dalam scope akses dan aksi diizinkan policy.
 6. **Serve files through authorization** — foto, materi, dan submission disajikan setelah otorisasi.
 7. **Least privilege** — role Admin tidak memberi akses ke folder privat orang lain.
@@ -810,6 +816,13 @@ erDiagram
         timestamp updated_at
     }
 
+    CLASSROOM_CO_TEACHER {
+        bigint classroom_id FK
+        bigint user_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+
     SUBMISSIONS {
         bigint id PK
         bigint folder_id FK
@@ -902,14 +915,14 @@ erDiagram
 | BR-14 | URL resource harus valid dan maksimal 2.048 karakter |
 | BR-15 | Foto maksimal 5 MB dan hanya format gambar yang didukung |
 | BR-16 | Folder privat hanya dapat diakses pemiliknya; role admin tidak menjadi jalan pintas |
-| BR-17 | Folder classroom hanya dapat diakses teacher pemilik dan student terdaftar |
-| BR-18 | Teacher/admin hanya dapat mengelola classroom yang dibuatnya |
-| BR-19 | Submission tugas hanya dibuat student terdaftar; grading hanya oleh teacher/admin classroom |
+| BR-17 | Folder classroom hanya dapat diakses teacher pemilik, co-teacher, dan student terdaftar |
+| BR-18 | Teacher/admin pemilik atau co-teacher dapat mengelola konten classroom; hanya pemilik yang dapat mengubah pengaturan classroom |
+| BR-19 | Submission tugas hanya dibuat student terdaftar; grading hanya oleh teacher/admin pemilik atau co-teacher classroom |
 | BR-20 | Grade berupa integer 0–100; file materi dan submission disajikan setelah otorisasi |
 | BR-21 | Submission setelah tenggat diterima dengan status `late`; grading mengubah status menjadi `graded` |
 | BR-22 | Admin dapat mengubah role, membuat password sementara, menghapus akun yang tidak memiliki data terkait, dan melihat audit tindakannya |
 | BR-23 | Admin tidak dapat mengubah role sendiri, menghapus akun sendiri, atau menghapus satu-satunya akun admin |
-| BR-24 | Akun dengan folder, classroom yang diajar, membership classroom, atau submission tidak dapat dihapus |
+| BR-24 | Akun dengan folder, classroom yang diajar, keanggotaan co-teacher/student, atau submission tidak dapat dihapus |
 | BR-25 | Password sementara hanya ditampilkan setelah reset dan tidak pernah dicatat di audit log |
 
 ### 10.2 Validasi Input

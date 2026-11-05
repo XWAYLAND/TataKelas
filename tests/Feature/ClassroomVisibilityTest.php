@@ -147,6 +147,44 @@ class ClassroomVisibilityTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_teacher_can_create_a_folder_in_their_own_classroom_only(): void
+    {
+        $teacher = User::factory()->create();
+        $teacher->forceFill(['role' => 'teacher'])->save();
+        $otherTeacher = User::factory()->create();
+        $otherTeacher->forceFill(['role' => 'teacher'])->save();
+        $student = User::factory()->create();
+
+        $classroom = $teacher->teachingClassrooms()->create([
+            'name' => 'Biology',
+            'code' => 'BIO-303',
+        ]);
+        $classroom->students()->attach($student);
+
+        $payload = [
+            'name' => 'Week 1 materials',
+            'visibility' => 'class_material',
+        ];
+
+        $this->actingAs($teacher)
+            ->post(route('classrooms.folders.store', $classroom), $payload)
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('folders', [
+            'classroom_id' => $classroom->id,
+            'user_id' => $teacher->id,
+            'name' => 'Week 1 materials',
+        ]);
+
+        $this->actingAs($otherTeacher)
+            ->post(route('classrooms.folders.store', $classroom), $payload)
+            ->assertForbidden();
+
+        $this->actingAs($student)
+            ->post(route('classrooms.folders.store', $classroom), $payload)
+            ->assertForbidden();
+    }
+
     public function test_admin_can_teach_a_class_but_cannot_read_student_private_folders(): void
     {
         $admin = User::factory()->create();

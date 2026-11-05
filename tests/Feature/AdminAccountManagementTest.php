@@ -89,6 +89,32 @@ class AdminAccountManagementTest extends TestCase
         $this->assertDatabaseCount('admin_audit_logs', 0);
     }
 
+    public function test_admin_cannot_demote_or_delete_a_co_teacher_with_classroom_membership(): void
+    {
+        $admin = $this->createUserWithRole('admin');
+        $owner = $this->createUserWithRole('teacher');
+        $coTeacher = $this->createUserWithRole('teacher');
+        $classroom = $owner->teachingClassrooms()->create([
+            'name' => 'Co-taught class',
+            'code' => 'CO-401',
+        ]);
+        $classroom->coTeachers()->attach($coTeacher);
+
+        $this->actingAs($admin);
+
+        $this->patch(route('admin.users.role', $coTeacher), ['role' => 'student'])
+            ->assertSessionHasErrors('role');
+        $this->delete(route('admin.users.destroy', $coTeacher))
+            ->assertSessionHasErrors('account');
+
+        $this->assertSame('teacher', $coTeacher->fresh()->role);
+        $this->assertDatabaseHas('users', ['id' => $coTeacher->id]);
+        $this->assertDatabaseHas('classroom_co_teacher', [
+            'classroom_id' => $classroom->id,
+            'user_id' => $coTeacher->id,
+        ]);
+    }
+
     public function test_admin_reset_generates_a_temporary_password_without_logging_it(): void
     {
         $admin = $this->createUserWithRole('admin');

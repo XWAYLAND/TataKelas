@@ -15,25 +15,36 @@
                     <div class="flex items-center gap-3">
                         <span class="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-xl text-primary"><i class="fas fa-chalkboard-user"></i></span>
                         <h1 class="break-words text-2xl font-bold tracking-tight sm:text-3xl">{{ $classroom->name }}</h1>
+                        @if($canManage && !$isOwner)
+                            <span class="badge badge-secondary badge-outline">Co-teacher</span>
+                        @endif
                     </div>
                     @if($classroom->description)
                         <p class="mt-4 max-w-2xl text-sm leading-6 text-base-content/65">{{ $classroom->description }}</p>
                     @endif
-                    @if(!auth()->user()->isTeacher())
+                    @if(!$isOwner)
                         <p class="mt-3 text-sm text-base-content/55">Taught by {{ $classroom->teacher->name }}</p>
                     @endif
                 </div>
 
-                @if((int) $classroom->teacher_id === (int) auth()->id())
+                @if($isOwner)
                     <div class="shrink-0 rounded-xl bg-base-200 px-4 py-3">
-                        <p class="text-xs font-medium text-base-content/55">Student join code</p>
+                        <p class="text-xs font-medium text-base-content/55">Class join code</p>
                         <p class="mt-1 select-all font-mono text-lg font-bold tracking-[0.16em]">{{ $classroom->code }}</p>
                     </div>
+                @elseif($canManage)
+                    <form action="{{ route('classrooms.co-teacher.leave', $classroom) }}" method="POST" class="shrink-0" onsubmit="return confirm('Leave this classroom as a co-teacher?')">
+                        @csrf
+                        @method('DELETE')
+                        <button class="btn btn-outline btn-error btn-sm">
+                            <i class="fas fa-person-walking-arrow-right"></i> Leave co-teaching
+                        </button>
+                    </form>
                 @endif
             </div>
         </header>
 
-        @if((int) $classroom->teacher_id === (int) auth()->id())
+        @if($canManage)
             <form action="{{ route('classrooms.folders.store', $classroom) }}" method="POST" class="app-surface grid gap-4 p-5 md:grid-cols-2">
                 @csrf
                 <div class="md:col-span-2">
@@ -77,7 +88,7 @@
             @if($folders->isEmpty())
                 <div class="rounded-2xl border border-dashed border-base-300 bg-base-100/70 px-6 py-10 text-center">
                     <p class="font-medium">Nothing posted here yet</p>
-                    <p class="mt-1 text-sm text-base-content/55">{{ auth()->user()->isTeacher() ? 'Create a folder above to share your first materials.' : 'Your teacher has not shared materials or assignments yet.' }}</p>
+                    <p class="mt-1 text-sm text-base-content/55">{{ $canManage ? 'Create a folder above to share your first materials.' : 'Your teacher has not shared materials or assignments yet.' }}</p>
                 </div>
             @else
                 <div class="divide-y divide-base-300/70 rounded-2xl border border-base-300/80 bg-base-100">
@@ -111,7 +122,43 @@
             @endif
         </section>
 
-        @if((int) $classroom->teacher_id === (int) auth()->id())
+        @if($canManage)
+            <details class="app-surface group">
+                <summary class="cursor-pointer list-none p-5 font-semibold">
+                    <i class="fas fa-user-tie mr-2 text-primary"></i>Teaching team
+                    <span class="ml-1 text-sm font-normal text-base-content/50">{{ $coTeachers->count() + 1 }}</span>
+                </summary>
+                <div class="divide-y divide-base-300/70 border-t border-base-300/70">
+                    <div class="flex items-center justify-between gap-3 px-5 py-3">
+                        <span class="font-medium">
+                            {{ $classroom->teacher->name }}
+                            <span class="badge badge-primary badge-outline badge-sm ml-1">Owner</span>
+                        </span>
+                        <span class="text-sm text-base-content/55">{{ $classroom->teacher->email }}</span>
+                    </div>
+                    @foreach($coTeachers as $coTeacher)
+                        <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+                            <span class="font-medium">
+                                {{ $coTeacher->name }}
+                                <span class="badge badge-secondary badge-outline badge-sm ml-1">Co-teacher</span>
+                            </span>
+                            <div class="flex items-center gap-3">
+                                <span class="text-sm text-base-content/55">{{ $coTeacher->email }}</span>
+                                @if($isOwner)
+                                    <form action="{{ route('classrooms.co-teachers.destroy', [$classroom, $coTeacher]) }}" method="POST" onsubmit="return confirm('Remove this co-teacher from the classroom?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="btn btn-ghost btn-xs text-error">
+                                            <i class="fas fa-user-minus"></i> Remove
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </details>
+
             <details class="app-surface group">
                 <summary class="cursor-pointer list-none p-5 font-semibold">
                     <i class="fas fa-users mr-2 text-primary"></i>Students enrolled

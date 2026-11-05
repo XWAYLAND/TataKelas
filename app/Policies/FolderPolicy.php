@@ -2,7 +2,6 @@
 
 namespace App\Policies;
 
-use App\Models\Classroom;
 use App\Models\Folder;
 use App\Models\User;
 
@@ -17,7 +16,7 @@ class FolderPolicy
         $classroom = $folder->classroom;
 
         return $classroom !== null
-            && ((int) $classroom->teacher_id === (int) $user->id
+            && ($classroom->hasTeacherAccess($user)
                 || $classroom->students()->whereKey($user->id)->exists());
     }
 
@@ -26,20 +25,17 @@ class FolderPolicy
         return $user->isTeacher() || $user->isStudent();
     }
 
-    public function createClassFolder(User $user, Classroom $classroom): bool
-    {
-        return $user->isTeacher()
-            && (int) $classroom->teacher_id === (int) $user->id;
-    }
-
     public function update(User $user, Folder $folder): bool
     {
         if ($folder->visibility === 'private') {
             return (int) $folder->user_id === (int) $user->id;
         }
 
-        return $folder->classroom !== null
-            && (int) $folder->classroom->teacher_id === (int) $user->id;
+        $classroom = $folder->classroom;
+
+        return $user->isTeacher()
+            && $classroom !== null
+            && $classroom->hasTeacherAccess($user);
     }
 
     public function delete(User $user, Folder $folder): bool

@@ -10,7 +10,7 @@ class JoinClassroomRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->role === 'student';
+        return in_array($this->user()?->role, ['student', 'teacher', 'admin'], true);
     }
 
     public function rules(): array

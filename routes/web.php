@@ -55,12 +55,17 @@ Route::middleware('auth')->group(function () {
         Route::get('/classrooms/{classroom}/folders/{folder}', [ClassroomController::class, 'showFolder'])
             ->scopeBindings()
             ->name('classrooms.folders.show');
+        Route::post('/classrooms/join', [ClassroomController::class, 'join'])->name('classrooms.join');
     });
 
     Route::middleware('role:teacher,admin')->group(function () {
         Route::post('/classrooms', [ClassroomController::class, 'store'])->name('classrooms.store');
         Route::post('/classrooms/{classroom}/folders', [ClassroomController::class, 'storeFolder'])
             ->name('classrooms.folders.store');
+        Route::delete('/classrooms/{classroom}/co-teachers/{coTeacher}', [ClassroomController::class, 'removeCoTeacher'])
+            ->name('classrooms.co-teachers.destroy');
+        Route::delete('/classrooms/{classroom}/co-teacher', [ClassroomController::class, 'leaveCoTeaching'])
+            ->name('classrooms.co-teacher.leave');
         Route::post('/classrooms/{classroom}/folders/{folder}/resources', [ResourceController::class, 'storeForClassroom'])
             ->scopeBindings()
             ->name('classrooms.folders.resources.store');
@@ -69,7 +74,6 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('role:student')->group(function () {
-        Route::post('/classrooms/join', [ClassroomController::class, 'join'])->name('classrooms.join');
         Route::post('/folders/{folder}/submissions', [SubmissionController::class, 'store'])
             ->name('folders.submissions.store');
     });

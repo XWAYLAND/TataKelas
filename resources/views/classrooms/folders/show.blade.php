@@ -35,7 +35,7 @@
             </div>
         </header>
 
-        @if($folder->resources->isNotEmpty() || $isTeacher)
+        @if($folder->resources->isNotEmpty() || $canManage)
             <section class="app-surface overflow-hidden">
                 <div class="flex flex-wrap items-center justify-between gap-3 border-b border-base-300/70 p-5">
                     <div>
@@ -67,7 +67,7 @@
                     <p class="px-5 py-6 text-sm text-base-content/55">No learning resources have been added to this folder.</p>
                 @endif
 
-                @if($isTeacher)
+                @if($canManage)
                     <form action="{{ route('classrooms.folders.resources.store', [$classroom, $folder]) }}" method="POST" enctype="multipart/form-data" class="grid gap-4 border-t border-base-300/70 bg-base-200/35 p-5 md:grid-cols-2">
                         @csrf
                         <h3 class="font-semibold md:col-span-2">Add a resource</h3>
@@ -107,7 +107,7 @@
             </section>
         @endif
 
-        @if($folder->visibility === 'assignment' && $isTeacher)
+        @if($folder->visibility === 'assignment' && $canManage)
             <section class="app-surface overflow-hidden">
                 <div class="border-b border-base-300/70 p-5">
                     <h2 class="font-semibold">Student submissions</h2>

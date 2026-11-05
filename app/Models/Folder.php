@@ -83,6 +83,12 @@ class Folder extends Model
                                                 ->from('classroom_user')
                                                 ->whereColumn('classroom_user.classroom_id', 'classrooms.id')
                                                 ->where('classroom_user.user_id', $user->getKey());
+                                        })
+                                        ->orWhereExists(function ($coTeachers) use ($user): void {
+                                            $coTeachers->selectRaw('1')
+                                                ->from('classroom_co_teacher')
+                                                ->whereColumn('classroom_co_teacher.classroom_id', 'classrooms.id')
+                                                ->where('classroom_co_teacher.user_id', $user->getKey());
                                         });
                                 });
                         });

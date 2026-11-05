@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreClassResourceRequest;
 use App\Http\Requests\StoreResourceRequest;
 use App\Http\Requests\UpdateResourceRequest;
+use App\Models\Classroom;
 use App\Models\Folder;
 use App\Models\Resource;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -104,7 +105,7 @@ class ResourceController extends Controller
         }
     }
 
-    public function storeForClassroom(StoreClassResourceRequest $request, Folder $folder): RedirectResponse
+    public function storeForClassroom(StoreClassResourceRequest $request, Classroom $classroom, Folder $folder): RedirectResponse
     {
         $this->authorize('create', [Resource::class, $folder]);
 

@@ -7,6 +7,7 @@ use App\Http\Requests\StoreClassFolderRequest;
 use App\Http\Requests\StoreClassroomRequest;
 use App\Models\Classroom;
 use App\Models\Folder;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -15,9 +16,21 @@ class ClassroomController extends Controller
 {
     public function index(): View
     {
-        $classrooms = auth()->user()->isTeacher()
-            ? auth()->user()->teachingClassrooms()->withCount('students')->latest()->get()
-            : auth()->user()->classrooms()->with('teacher')->withCount('folders')->latest()->get();
+        $user = auth()->user();
+
+        if ($user->isTeacher()) {
+            $classrooms = Classroom::query()
+                ->where(function ($query) use ($user): void {
+                    $query->where('teacher_id', $user->id)
+                        ->orWhereHas('coTeachers', fn ($coTeachers) => $coTeachers->whereKey($user->id));
+                })
+                ->with('teacher')
+                ->withCount(['students', 'folders'])
+                ->latest()
+                ->get();
+        } else {
+            $classrooms = $user->classrooms()->with('teacher')->withCount('folders')->latest()->get();
+        }
 
         return view('classrooms.index', compact('classrooms'));
     }
@@ -37,7 +50,23 @@ class ClassroomController extends Controller
     public function join(JoinClassroomRequest $request): RedirectResponse
     {
         $classroom = Classroom::where('code', $request->validated('code'))->firstOrFail();
-        $classroom->students()->syncWithoutDetaching([$request->user()->id]);
+        $user = $request->user();
+
+        if ($user->isTeacher()) {
+            if ($classroom->isOwnedBy($user)) {
+                return redirect()
+                    ->route('classrooms.show', $classroom)
+                    ->with('info', 'You already teach this classroom.');
+            }
+
+            $classroom->coTeachers()->syncWithoutDetaching([$user->id]);
+
+            return redirect()
+                ->route('classrooms.show', $classroom)
+                ->with('success', "You joined {$classroom->name} as a co-teacher.");
+        }
+
+        $classroom->students()->syncWithoutDetaching([$user->id]);
 
         return redirect()
             ->route('classrooms.show', $classroom)
@@ -46,7 +75,11 @@ class ClassroomController extends Controller
 
     public function show(Classroom $classroom): View
     {
+        $user = auth()->user();
         $this->authorize('view', $classroom);
+
+        $isOwner = $classroom->isOwnedBy($user);
+        $canManage = $user->can('createClassFolder', $classroom);
 
         $folders = $classroom->folders()
             ->whereIn('visibility', ['class_material', 'assignment'])
@@ -56,11 +89,50 @@ class ClassroomController extends Controller
             ->orderBy('name')
             ->get();
 
-        $students = auth()->user()->isTeacher()
+        $students = $canManage
             ? $classroom->students()->orderBy('name')->get()
             : collect();
 
-        return view('classrooms.show', compact('classroom', 'folders', 'students'));
+        $coTeachers = $canManage
+            ? $classroom->coTeachers()->orderBy('name')->get()
+            : collect();
+
+        return view('classrooms.show', compact(
+            'classroom',
+            'folders',
+            'students',
+            'coTeachers',
+            'isOwner',
+            'canManage'
+        ));
+    }
+
+    public function removeCoTeacher(Classroom $classroom, User $coTeacher): RedirectResponse
+    {
+        $this->authorize('removeCoTeacher', [$classroom, $coTeacher]);
+
+        $classroom->coTeachers()->detach($coTeacher->id);
+
+        return redirect()
+            ->route('classrooms.show', $classroom)
+            ->with('success', "{$coTeacher->name} was removed as a co-teacher.");
+    }
+
+    public function leaveCoTeaching(Classroom $classroom): RedirectResponse
+    {
+        $user = auth()->user();
+
+        if (! $classroom->coTeachers()->whereKey($user->id)->exists()) {
+            return redirect()
+                ->route('classrooms.index')
+                ->with('info', 'You are not a co-teacher of this classroom.');
+        }
+
+        $classroom->coTeachers()->detach($user->id);
+
+        return redirect()
+            ->route('classrooms.index')
+            ->with('success', "You left {$classroom->name} as a co-teacher.");
     }
 
     public function storeFolder(StoreClassFolderRequest $request, Classroom $classroom): RedirectResponse
@@ -86,14 +158,14 @@ class ClassroomController extends Controller
 
         $folder->load('resources');
 
-        $isTeacher = (int) $classroom->teacher_id === (int) auth()->id();
-        $submission = $isTeacher
+        $canManage = auth()->user()->can('createClassFolder', $classroom);
+        $submission = $canManage
             ? null
             : $folder->submissions()->where('student_id', auth()->id())->first();
-        $submissions = $isTeacher
+        $submissions = $canManage
             ? $folder->submissions()->with('student')->latest()->get()
             : collect();
-        $pendingStudents = $isTeacher
+        $pendingStudents = $canManage
             ? $classroom->students()
                 ->whereNotIn('users.id', $submissions->pluck('student_id'))
                 ->orderBy('name')
@@ -108,7 +180,7 @@ class ClassroomController extends Controller
         return view('classrooms.folders.show', compact(
             'classroom',
             'folder',
-            'isTeacher',
+            'canManage',
             'submission',
             'submissions',
             'pendingStudents',

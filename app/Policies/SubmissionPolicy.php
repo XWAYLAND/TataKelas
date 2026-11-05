@@ -15,13 +15,19 @@ class SubmissionPolicy
             return $classroom !== null && $classroom->students()->whereKey($user->id)->exists();
         }
 
+        $classroom = $submission->folder?->classroom;
+
         return $user->isTeacher()
-            && (int) $submission->folder?->classroom?->teacher_id === (int) $user->id;
+            && $classroom !== null
+            && $classroom->hasTeacherAccess($user);
     }
 
     public function grade(User $user, Submission $submission): bool
     {
+        $classroom = $submission->folder?->classroom;
+
         return $user->isTeacher()
-            && (int) $submission->folder?->classroom?->teacher_id === (int) $user->id;
+            && $classroom !== null
+            && $classroom->hasTeacherAccess($user);
     }
 }
