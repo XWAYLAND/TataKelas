@@ -84,7 +84,7 @@
         </div>
         
         <!-- Tab Content: Resources -->
-        <div id="content-resources" class="tab-content {{ $activeTab === 'resources' ? '' : 'hidden' }}">
+        <div id="content-resources" class="folder-tab-panel {{ $activeTab === 'resources' ? '' : 'hidden' }}">
             <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                 <h2 class="text-xl font-semibold text-gray-800 dark:text-white">
                     <i class="fas fa-bookmark text-blue-600 dark:text-blue-400"></i> Resources
@@ -188,7 +188,7 @@
         </div>
         
         <!-- Tab Content: Notes -->
-        <div id="content-notes" class="tab-content {{ $activeTab === 'notes' ? '' : 'hidden' }}">
+        <div id="content-notes" class="folder-tab-panel {{ $activeTab === 'notes' ? '' : 'hidden' }}">
             <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                 <h2 class="text-xl font-semibold text-gray-800 dark:text-white">
                     <i class="fas fa-sticky-note text-yellow-600 dark:text-yellow-400"></i> Notes
@@ -248,7 +248,7 @@
         </div>
         
         <!-- Tab Content: Photos -->
-        <div id="content-photos" class="tab-content {{ $activeTab === 'photos' ? '' : 'hidden' }}">
+        <div id="content-photos" class="folder-tab-panel {{ $activeTab === 'photos' ? '' : 'hidden' }}">
             <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                 <h2 class="text-xl font-semibold text-gray-800 dark:text-white">
                     <i class="fas fa-image text-purple-600 dark:text-purple-400"></i> Photos
@@ -346,7 +346,7 @@
 <script>
     function switchTab(tabName) {
         // Hide all tab contents
-        document.querySelectorAll('.tab-content').forEach(content => {
+        document.querySelectorAll('.folder-tab-panel').forEach(content => {
             content.classList.add('hidden');
         });
         
