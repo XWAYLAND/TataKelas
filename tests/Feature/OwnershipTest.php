@@ -25,13 +25,29 @@ class OwnershipTest extends TestCase
             'email' => 'first@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
-        ])->assertRedirect(route('folders.index'));
+        ])
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('status')
+            ->assertSessionHas('_old_input.email', 'first@example.com')
+            ->assertSessionMissing('_old_input.password');
 
-        $this->assertAuthenticated();
+        $this->assertGuest();
         $this->assertDatabaseHas('folders', [
             'id' => $legacyFolder->id,
             'user_id' => User::where('email', 'first@example.com')->value('id'),
         ]);
+
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertSee('first@example.com')
+            ->assertSee('Akun berhasil dibuat. Silakan masuk dengan email dan kata sandi Anda.');
+
+        $this->post(route('login'), [
+            'email' => 'first@example.com',
+            'password' => 'password123',
+        ])->assertRedirect(route('folders.index'));
+
+        $this->assertAuthenticatedAs(User::where('email', 'first@example.com')->firstOrFail());
     }
 
     public function test_users_cannot_view_another_users_folder_or_resource(): void

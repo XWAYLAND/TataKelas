@@ -10,6 +10,13 @@
             <p class="mt-2 text-sm text-base-content/55">Masuk untuk membuka workspace pribadi dan classroom-mu.</p>
         </div>
 
+        @if(session('status'))
+            <div role="status" class="alert alert-success mb-5 items-start">
+                <i class="fas fa-circle-check mt-0.5"></i>
+                <span class="text-sm">{{ session('status') }}</span>
+            </div>
+        @endif
+
         @if($errors->any())
             <div role="alert" class="alert alert-error mb-5 items-start">
                 <i class="fas fa-circle-exclamation mt-0.5"></i>

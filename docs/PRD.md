@@ -1041,7 +1041,7 @@ Contoh:
 | UAT-01 | Guest membuka `/` | Redirect ke halaman login | ✅ |
 | UAT-02 | Guest membuka `/folders` | Redirect ke halaman login | ✅ |
 | UAT-03 | Guest membuka `/login` dan `/register` | Halaman tampil | ✅ |
-| UAT-04 | Registrasi dengan email baru | Akun dibuat dan login otomatis | ✅ |
+| UAT-04 | Registrasi dengan email baru | Akun dibuat, diarahkan ke login dengan email terisi, lalu pengguna masuk menggunakan email dan password | ✅ |
 | UAT-05 | Registrasi dengan email duplikat | Error validasi | ✅ |
 | UAT-06 | Login dengan kredensial valid | Masuk ke dashboard | ✅ |
 | UAT-07 | Login dengan kredensial salah | Error, tidak masuk | ✅ |

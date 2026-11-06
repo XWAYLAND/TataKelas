@@ -68,10 +68,10 @@ class AuthController extends Controller
             return $user;
         });
 
-        Auth::login($user);
-        $request->session()->regenerate();
-
-        return redirect()->route('folders.index');
+        return redirect()
+            ->route('login')
+            ->with('status', 'Akun berhasil dibuat. Silakan masuk dengan email dan kata sandi Anda.')
+            ->withInput(['email' => $validated['email']]);
     }
 
     public function logout(Request $request): RedirectResponse
