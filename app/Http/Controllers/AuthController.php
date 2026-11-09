@@ -30,6 +30,18 @@ class AuthController extends Controller
                 ->onlyInput('email');
         }
 
+        if ($request->user()->isSuspended()) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return back()
+                ->withErrors(['email' => 'Akun Anda sedang ditangguhkan. Silakan hubungi administrator.'])
+                ->onlyInput('email');
+        }
+
+        $request->user()->forceFill(['last_login_at' => now()])->save();
+
         $request->session()->regenerate();
 
         $defaultRoute = $request->user()->role === 'admin' ? 'admin.index' : 'folders.index';

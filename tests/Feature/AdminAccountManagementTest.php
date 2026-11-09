@@ -21,12 +21,12 @@ class AdminAccountManagementTest extends TestCase
 
         $this->get(route('admin.index'))->assertRedirect(route('login'));
         $this->actingAs($student)->get(route('admin.index'))->assertForbidden();
+        $this->actingAs($student)->get(route('admin.users.index'))->assertForbidden();
         $this->actingAs($student)->get(route('admin.audit-logs.index'))->assertForbidden();
 
         $this->actingAs($admin)
-            ->get(route('admin.index'))
+            ->get(route('admin.users.index'))
             ->assertOk()
-            ->assertSee('Kelola pengguna')
             ->assertSee($student->email);
     }
 
@@ -37,7 +37,7 @@ class AdminAccountManagementTest extends TestCase
         $student = User::factory()->create(['email' => 'murid@example.test']);
 
         $this->actingAs($admin)
-            ->get(route('admin.index', ['q' => 'guru', 'role' => 'teacher']))
+            ->get(route('admin.users.index', ['q' => 'guru', 'role' => 'teacher']))
             ->assertOk()
             ->assertSee($teacher->email)
             ->assertDontSee($student->email);
@@ -60,8 +60,10 @@ class AdminAccountManagementTest extends TestCase
             'action' => AdminAuditLog::ROLE_CHANGED,
         ]);
         $this->assertSame(
-            ['from' => 'student', 'to' => 'teacher'],
-            AdminAuditLog::query()->where('action', AdminAuditLog::ROLE_CHANGED)->firstOrFail()->details,
+            collect(['from' => 'student', 'to' => 'teacher'])->sortKeys()->all(),
+            collect(AdminAuditLog::query()->where('action', AdminAuditLog::ROLE_CHANGED)->firstOrFail()->details)
+                ->sortKeys()
+                ->all(),
         );
     }
 
@@ -125,7 +127,7 @@ class AdminAccountManagementTest extends TestCase
 
         $response = $this->actingAs($admin)
             ->post(route('admin.users.reset-password', $student))
-            ->assertRedirect(route('admin.index'))
+            ->assertRedirect(route('admin.users.show', $student))
             ->assertSessionHas('temporary_password');
 
         $temporaryPassword = $response->getSession()->get('temporary_password');
@@ -139,8 +141,8 @@ class AdminAccountManagementTest extends TestCase
         $this->assertSame($student->email, $auditLog->target_email);
         $this->assertStringNotContainsString($temporaryPassword, json_encode($auditLog->details));
 
-        $this->get(route('admin.index'))->assertOk()->assertSee($temporaryPassword);
-        $this->get(route('admin.index'))->assertOk()->assertDontSee($temporaryPassword);
+        $this->get(route('admin.users.show', $student))->assertOk()->assertSee($temporaryPassword);
+        $this->get(route('admin.users.show', $student))->assertOk()->assertDontSee($temporaryPassword);
     }
 
     public function test_admin_cannot_delete_users_with_related_learning_data(): void

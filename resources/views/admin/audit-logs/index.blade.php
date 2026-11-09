@@ -8,16 +8,22 @@
             <div>
                 <h1 class="text-3xl font-bold tracking-tight">Audit log</h1>
                 <p class="mt-2 max-w-2xl text-sm leading-6 text-base-content/60">
-                    Riwayat perubahan role, reset password, dan penghapusan akun oleh admin.
+                    Riwayat perubahan role, reset password, penghapusan, penangguhan, dan pengaktifan kembali akun oleh admin.
                 </p>
             </div>
-            <a href="{{ route('admin.index') }}" class="btn btn-ghost border-base-300">
-                <i class="fas fa-users"></i>
-                Kembali ke pengguna
-            </a>
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ route('admin.audit-logs.export', request()->query()) }}" class="btn btn-ghost border-base-300">
+                    <i class="fas fa-file-csv"></i>
+                    Export CSV
+                </a>
+                <a href="{{ route('admin.users.index') }}" class="btn btn-ghost border-base-300">
+                    <i class="fas fa-users"></i>
+                    Kembali ke pengguna
+                </a>
+            </div>
         </header>
 
-        <form method="GET" action="{{ route('admin.audit-logs.index') }}" class="app-surface grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_15rem_auto] sm:items-end">
+        <form method="GET" action="{{ route('admin.audit-logs.index') }}" class="app-surface grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_14rem_10rem_10rem_auto] sm:items-end">
             <label class="form-control">
                 <span class="label-text mb-2 font-medium">Cari admin atau akun</span>
                 <input
@@ -33,16 +39,24 @@
                 <span class="label-text mb-2 font-medium">Jenis tindakan</span>
                 <select name="action" class="select select-bordered w-full">
                     <option value="">Semua tindakan</option>
-                    <option value="role_changed" @selected(($filters['action'] ?? '') === 'role_changed')>Perubahan role</option>
-                    <option value="password_reset" @selected(($filters['action'] ?? '') === 'password_reset')>Reset password</option>
-                    <option value="account_deleted" @selected(($filters['action'] ?? '') === 'account_deleted')>Penghapusan akun</option>
+                    @foreach(['role_changed' => 'Perubahan role', 'password_reset' => 'Reset password', 'account_deleted' => 'Penghapusan akun', 'account_suspended' => 'Penangguhan akun', 'account_reactivated' => 'Pengaktifan kembali'] as $value => $label)
+                        <option value="{{ $value }}" @selected(($filters['action'] ?? '') === $value)>{{ $label }}</option>
+                    @endforeach
                 </select>
+            </label>
+            <label class="form-control">
+                <span class="label-text mb-2 font-medium">Dari</span>
+                <input type="date" name="from" value="{{ $filters['from'] ?? '' }}" class="input input-bordered w-full">
+            </label>
+            <label class="form-control">
+                <span class="label-text mb-2 font-medium">Hingga</span>
+                <input type="date" name="to" value="{{ $filters['to'] ?? '' }}" class="input input-bordered w-full">
             </label>
             <div class="flex gap-2">
                 <button type="submit" class="btn btn-primary flex-1 sm:flex-none">
                     <i class="fas fa-filter"></i> Filter
                 </button>
-                @if(($filters['q'] ?? '') !== '' || ($filters['action'] ?? '') !== '')
+                @if(collect($filters)->filter(fn ($value) => ! empty($value))->count() > 0)
                     <a href="{{ route('admin.audit-logs.index') }}" class="btn btn-ghost">Reset</a>
                 @endif
             </div>
@@ -57,13 +71,14 @@
                 </div>
             @else
                 <div class="overflow-x-auto">
-                    <table class="table min-w-[760px]">
+                    <table class="table min-w-[860px]">
                         <thead>
                             <tr>
                                 <th>Waktu</th>
                                 <th>Tindakan</th>
                                 <th>Admin</th>
                                 <th>Akun terkait</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -71,17 +86,9 @@
                                 <tr>
                                     <td class="whitespace-nowrap text-sm text-base-content/65">{{ $entry->created_at->format('d M Y, H:i') }}</td>
                                     <td>
-                                        @if($entry->action === 'role_changed')
-                                            <span class="font-medium">Role diubah</span>
-                                            <p class="mt-1 text-xs text-base-content/55">
-                                                {{ ucfirst($entry->details['from'] ?? '—') }} → {{ ucfirst($entry->details['to'] ?? '—') }}
-                                            </p>
-                                        @elseif($entry->action === 'password_reset')
-                                            <span class="font-medium">Password direset</span>
-                                            <p class="mt-1 text-xs text-base-content/55">Password sementara dibuat</p>
-                                        @else
-                                            <span class="font-medium">Akun dihapus</span>
-                                            <p class="mt-1 text-xs text-base-content/55">Penghapusan permanen</p>
+                                        <span class="font-medium">{{ $entry->action_label }}</span>
+                                        @if($entry->details)
+                                            <p class="mt-1 text-xs text-base-content/55">{{ collect($entry->details)->map(fn ($value, $key) => rtrim($key, '_').' '.e(is_string($value) ? $value : json_encode($value)))->implode(' · ') }}</p>
                                         @endif
                                     </td>
                                     <td>
@@ -91,6 +98,13 @@
                                     <td>
                                         <div class="font-medium">{{ $entry->target_name ?? 'Akun dihapus' }}</div>
                                         <div class="mt-0.5 text-sm text-base-content/55">{{ $entry->target_email ?? 'Data akun sudah dihapus' }}</div>
+                                    </td>
+                                    <td class="text-right">
+                                        @if($entry->target_user_id)
+                                            <a href="{{ route('admin.users.show', $entry->target_user_id) }}" class="btn btn-ghost btn-xs border-base-300">
+                                                <i class="fas fa-arrow-right text-xs"></i>
+                                            </a>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach

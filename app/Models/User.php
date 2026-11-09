@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,11 +10,15 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    public const STATUS_ACTIVE = 'active';
+
+    public const STATUS_SUSPENDED = 'suspended';
 
     protected $attributes = [
         'role' => 'student',
+        'status' => self::STATUS_ACTIVE,
     ];
 
     /**
@@ -40,17 +42,36 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
+            'suspended_at' => 'datetime',
+            'last_login_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === self::STATUS_ACTIVE;
+    }
+
+    public function isSuspended(): bool
+    {
+        return $this->status === self::STATUS_SUSPENDED;
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return $this->isSuspended() ? 'Ditangguhkan' : 'Aktif';
+    }
+
+    public function getStatusBadgeColorAttribute(): string
+    {
+        return $this->isSuspended()
+            ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200'
+            : 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200';
     }
 
     /**

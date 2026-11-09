@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminAuditLogController;
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClassroomController;
@@ -36,17 +37,24 @@ Route::get('/', function () {
     return redirect()->route(auth()->user()->role === 'admin' ? 'admin.index' : 'folders.index');
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'active'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/account/password', [PasswordController::class, 'edit'])->name('account.password.edit');
     Route::put('/account/password', [PasswordController::class, 'update'])->name('account.password.update');
 
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/', [AdminUserController::class, 'index'])->name('index');
+        Route::get('/', [AdminDashboardController::class, 'index'])->name('index');
+        Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+        Route::get('/users/export', [AdminUserController::class, 'export'])->name('users.export');
+        Route::patch('/users/bulk', [AdminUserController::class, 'bulk'])->name('users.bulk');
+        Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('users.show');
         Route::patch('/users/{user}/role', [AdminUserController::class, 'updateRole'])->name('users.role');
         Route::post('/users/{user}/reset-password', [AdminUserController::class, 'resetPassword'])->name('users.reset-password');
+        Route::patch('/users/{user}/suspend', [AdminUserController::class, 'suspend'])->name('users.suspend');
+        Route::patch('/users/{user}/reactivate', [AdminUserController::class, 'reactivate'])->name('users.reactivate');
         Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
         Route::get('/audit-logs', [AdminAuditLogController::class, 'index'])->name('audit-logs.index');
+        Route::get('/audit-logs/export', [AdminAuditLogController::class, 'export'])->name('audit-logs.export');
     });
 
     Route::middleware('role:teacher,admin,student')->group(function () {

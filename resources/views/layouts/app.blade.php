@@ -97,7 +97,8 @@
                                     </div>
                                 </li>
                                 @if(auth()->user()->role === 'admin')
-                                    <li><a href="{{ route('admin.index') }}"><i class="fas fa-users-gear w-4"></i> Kelola pengguna</a></li>
+                                    <li><a href="{{ route('admin.index') }}"><i class="fas fa-gauge-high w-4"></i> Dashboard</a></li>
+                                    <li><a href="{{ route('admin.users.index') }}"><i class="fas fa-users-gear w-4"></i> Kelola pengguna</a></li>
                                     <li><a href="{{ route('admin.audit-logs.index') }}"><i class="fas fa-clock-rotate-left w-4"></i> Audit log</a></li>
                                 @else
                                     <li><a href="{{ route('folders.index') }}"><i class="fas fa-gauge-high w-4"></i> Dashboard</a></li>
@@ -187,7 +188,12 @@
                         <p class="px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-base-content/40">Administration</p>
                         <ul class="menu w-full gap-0.5 p-0">
                             <li>
-                                <a href="{{ route('admin.index') }}" class="{{ request()->routeIs('admin.index', 'admin.users.*') ? 'bg-primary/10 font-semibold text-primary' : '' }}">
+                                <a href="{{ route('admin.index') }}" class="{{ request()->routeIs('admin.index') ? 'bg-primary/10 font-semibold text-primary' : '' }}">
+                                    <i class="fas fa-gauge-high w-4 text-center"></i> Dashboard
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('admin.users.index') }}" class="{{ request()->routeIs('admin.users.*') ? 'bg-primary/10 font-semibold text-primary' : '' }}">
                                     <i class="fas fa-users-gear w-4 text-center"></i> Kelola pengguna
                                 </a>
                             </li>

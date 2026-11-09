@@ -25,6 +25,39 @@
     @endif
 
     <div class="{{ $compact ? 'grid grid-cols-2 gap-2' : 'flex flex-wrap items-center gap-2' }}">
+        @unless($isCurrentUser)
+            @if($user->isActive())
+                <form
+                    method="POST"
+                    action="{{ route('admin.users.suspend', $user) }}"
+                    class="{{ $compact ? 'min-w-0' : '' }}"
+                    onsubmit="return confirm('Tangguhkan akun ini? Akun tidak akan bisa login sampai diaktifkan kembali.');"
+                >
+                    @csrf
+                    @method('PATCH')
+                    <input type="hidden" name="reason" value="">
+                    <button type="submit" class="btn btn-ghost btn-sm w-full border-base-300 text-warning">
+                        <i class="fas fa-user-slash"></i>
+                        Tangguhkan
+                    </button>
+                </form>
+            @else
+                <form
+                    method="POST"
+                    action="{{ route('admin.users.reactivate', $user) }}"
+                    class="{{ $compact ? 'min-w-0' : '' }}"
+                    onsubmit="return confirm('Aktifkan kembali akun ini?');"
+                >
+                    @csrf
+                    @method('PATCH')
+                    <button type="submit" class="btn btn-ghost btn-sm w-full border-base-300 text-success">
+                        <i class="fas fa-user-check"></i>
+                        Aktifkan kembali
+                    </button>
+                </form>
+            @endif
+        @endunless
+
         <form
             method="POST"
             action="{{ route('admin.users.reset-password', $user) }}"
