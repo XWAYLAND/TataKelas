@@ -80,7 +80,8 @@ TataKelas mengelompokkan bahan belajar ke dalam folder, misalnya `Laravel Develo
 - Guru lain dapat bergabung ke classroom sebagai **co-teacher** melalui kode kelas yang sama. Co-teacher dapat mengelola materi dan menilai submission; hanya pemilik classroom yang dapat mengubah pengaturan atau mengeluarkan co-teacher. Co-teacher juga dapat keluar sendiri.
 - Guru/admin dapat membagikan folder materi atau tugas ke classroom.
 - Materi mendukung tautan dan file PDF/Office yang diunduh melalui route terautentikasi oleh anggota kelas.
-- **Materi PDF dapat dipratinjau langsung di browser** (preview) tanpa perlu diunduh, melalui route terautentikasi `resources.preview`.
+- **Satu materi/tugas dapat memuat beberapa berkas (maksimal 10)**, ditampilkan sebagai daftar unduhan per berkas.
+- **Materi PDF dapat dipratinjau langsung di browser** (preview) tanpa perlu diunduh, melalui route terautentikasi `resources.files.preview` per berkas.
 - Tugas memiliki instruksi dan tenggat, serta menerima jawaban teks, URL, atau beberapa berkas sekaligus.
 - Pengumpulan terlambat tetap diterima dan diberi status `late`; guru/admin classroom memberi nilai 0–100 dan feedback.
 - File materi dan submission disimpan di disk privat, bukan URL publik.
@@ -88,10 +89,12 @@ TataKelas mengelompokkan bahan belajar ke dalam folder, misalnya `Laravel Develo
 ### Manajemen Resource
 
 - Menambah bookmark/resource ke folder.
+
 - Jenis resource: `url`, `file`, `video`, `documentation`, `assignment_instruction`.
+- **Resource berkas dapat memuat beberapa berkas sekaligus (maksimal 10 file PDF/Office, masing-masing maksimal 20 MB)**, ditampilkan sebagai daftar berkas dengan aksi preview/unduh per berkas.
 - **Field upload berkas hanya tampil ketika jenis resource adalah `file` (PDF/dokumen)**; memilih jenis lain menyembunyikan field tersebut secara otomatis. Perilaku yang sama berlaku pada form materi/tugas classroom, termasuk ketika form memuat data lama (validasi error).
-- Mengubah resource berkas tanpa mengunggah ulang berkas baru.
-- **PDF dapat dipratinjau di browser** melalui route terautentikasi `resources.preview` tanpa proses download; tombol unduh tetap tersedia.
+- Mengubah resource berkas tanpa mengunggah ulang berkas baru; **mengunggah daftar berkas baru menggantikan seluruh berkas lama**.
+- **PDF dapat dipratinjau di browser** melalui route terautentikasi `resources.files.preview` per berkas tanpa proses download; tombol unduh tetap tersedia.
 - Status baca: `to_read`, `reading`, `completed`.
 - Mengubah status baca langsung dari daftar resource.
 - Memindahkan resource ke folder lain.
@@ -623,8 +626,8 @@ Grup route di bawah dilindungi middleware `auth` dan `active` (akun ditangguhkan
 | POST | `/folders/{folder}/submissions` | `folders.submissions.store` | Student mengumpulkan tugas (teks/URL/berkas) |
 | DELETE | `/folders/{folder}/submissions` | `folders.submissions.destroy` | Student menarik submission |
 | PATCH | `/submissions/{submission}/grade` | `submissions.grade` | Teacher/Admin memberi nilai dan feedback |
-| GET | `/resources/{resource}/file` | `resources.file` | Unduh resource setelah otorisasi |
-| GET | `/resources/{resource}/preview` | `resources.preview` | Pratinjau PDF materi inline di browser |
+| GET | `/resources/{resource}/files/{file}` | `resources.files.download` | Unduh satu berkas resource setelah otorisasi |
+| GET | `/resources/{resource}/files/{file}/preview` | `resources.files.preview` | Pratinjau PDF satu berkas materi inline di browser |
 | GET | `/submission-files/{file}` | `submissions.files.download` | Unduh berkas submission setelah otorisasi |
 
 #### Workspace pribadi (`role:teacher,student`)
@@ -693,11 +696,21 @@ Grup route di bawah dilindungi middleware `auth` dan `active` (akun ditangguhkan
 | `folder_id` | bigint | Foreign key ke folder, cascade delete |
 | `title` | string | Judul resource |
 | `url` | text nullable | URL resource |
-| `file_path` | string nullable | Berkas privat |
 | `resource_type` | enum | `url`, `file`, `video`, `documentation`, `assignment_instruction` |
 | `notes` | text nullable | Catatan pribadi |
 | `read_status` | enum | `to_read`, `reading`, `completed` |
 | `created_at`, `updated_at` | timestamp | Waktu dibuat/diubah |
+
+### `resource_files`
+
+Berkas resource disimpan terpisah di tabel `resource_files` sehingga satu resource (personal maupun materi kelas) dapat memuat hingga 10 berkas. Baris berkas dibuat dari data lama `resources.file_path` saat migrasi, lalu kolom tersebut dihapus dari tabel `resources`.
+
+| Kolom | Keterangan |
+| --- | --- |
+| `resource_id` | FK ke resources, cascade delete |
+| `file_path` | Path berkas di disk privat |
+| `original_name` | Nama asli berkas saat diunggah |
+| `size` | Ukuran berkas dalam byte (nullable, transisi dari data lama) |
 
 ### `classrooms`, `classroom_user`, dan `classroom_co_teacher`
 
@@ -777,7 +790,7 @@ Catatan tindakan administratif admin. Snapshot nama/email aktor dan target disim
 - `title`: wajib, maksimal 255 karakter.
 - `url`: URL valid untuk resource tautan; dapat kosong untuk berkas.
 - `resource_type`: `url`, `file`, `video`, `documentation`, atau `assignment_instruction`.
-- `file`: opsional atau wajib sesuai jenis resource; PDF/Office maksimal 20 MB.
+- `files`: daftar berkas (opsional atau wajib sesuai jenis resource), maksimal 10; setiap berkas PDF/Office (`pdf, doc, docx, ppt, pptx`) maksimal 20 MB. Wajib minimal satu berkas saat membuat resource jenis `file`, atau saat mengedit resource `file` yang belum memiliki berkas.
 - `notes`: opsional, maksimal 5.000 karakter.
 - `read_status`: wajib, salah satu dari `to_read`, `reading`, `completed`.
 
@@ -850,6 +863,7 @@ Test yang tersedia (70 test / 380 assertion):
 - `tests/Feature/CoTeacherTest.php` — co-teacher join/keluar/dikeluarkan dan batas otorisasinya.
 - `tests/Feature/SubmissionTest.php` — multi-file submission, replace attachment, tarik submission.
 - `tests/Feature/ResourcePreviewTest.php` — preview PDF inline, penolakan untuk non-PDF, otorisasi preview.
+- `tests/Feature/ResourceMultiFileTest.php` — multi-berkas resource personal, materi kelas multi-berkas, replace saat update, validasi tanpa berkas.
 - `tests/Feature/ResourceManagementTest.php` — edit resource berkas tanpa re-upload.
 - `tests/Feature/TataKelasDemoSeederTest.php` — idempotensi dan batasan seeder demo.
 - `tests/Feature/AdminAccountManagementTest.php` — direktori admin, ubah role, guard self/last-admin/co-teacher, reset password, hapus akun, audit log.
@@ -950,7 +964,8 @@ Pastikan `daisyui` terpasang sebagai dev dependency. Jika build belum tersedia, 
 | CRUD folder | Selesai |
 | CRUD resource | Selesai, termasuk halaman detail |
 | Conditional upload field resource/materi | Selesai |
-| Pratinjau PDF materi inline | Selesai |
+| Pratinjau PDF materi inline | Selesai, per berkas |
+| Resource multi-berkas (personal & materi kelas) | Selesai, maksimal 10 berkas |
 | Ubah status baca resource | Selesai |
 | Pindah resource antar folder | Selesai |
 | Pencarian dan filter resource | Selesai |

@@ -55,7 +55,7 @@ Produk berfokus pada:
 - Role student, teacher, dan admin (admin juga dapat mengajar).
 - Classroom dengan kode gabung, folder materi, tugas bertenggat, submission, dan penilaian.
 - Pemisahan ketat antara folder privat dan konten classroom.
-- Materi PDF yang dapat dipratinjau inline dan submission multi-berkas.
+- Materi PDF yang dapat dipratinjau inline, resource/materi multi-berkas, dan submission multi-berkas.
 - Panel admin untuk manajemen akun lintas sistem: ubah role, suspend/reactivate, aksi massal, export CSV, reset password, dan audit log tindakan admin.
 
 ---
@@ -217,6 +217,8 @@ Prioritas memakai MoSCoW: **M** = Must have, **S** = Should have, **C** = Could 
 | FR-52 | Admin melihat dashboard ringkasan akun, classroom, resource, dan aktivitas admin | C | Selesai |
 | FR-53 | Detail pengguna menampilkan classroom, jumlah data terkait, login terakhir, status, dan riwayat audit akun | C | Selesai |
 | FR-54 | Admin dapat mencari dan memfilter audit log berdasarkan tanggal dan jenis tindakan | C | Selesai |
+| FR-55 | Pengguna dapat melampirkan beberapa berkas (maksimal 10) pada satu resource personal | M | Selesai |
+| FR-56 | Teacher/Admin dapat membagikan materi/tugas classroom dengan beberapa berkas (maksimal 10) | M | Selesai |
 
 ### 4.4 Kebutuhan Non-Fungsional
 
@@ -291,7 +293,7 @@ Prioritas memakai MoSCoW: **M** = Must have, **S** = Should have, **C** = Could 
 - Pemisahan konten privat dan classroom; materi kelas hanya dapat dilihat pengajar dan murid terdaftar.
 - Classroom untuk teacher/admin, pendaftaran student dengan kode, dan co-teacher melalui kode.
 - Folder kelas untuk materi dan tugas dengan tenggat.
-- Resource kelas berupa tautan atau berkas privat yang hanya dapat diunduh anggota kelas.
+- Resource kelas berupa tautan atau berkas privat multi-berkas yang hanya dapat diunduh anggota kelas.
 - Submission tugas berupa teks, tautan, atau berkas.
 - Penilaian 0–100 dan feedback oleh teacher/admin pemilik atau co-teacher classroom.
 - Penerimaan submission terlambat dengan penanda `late`.
@@ -402,7 +404,7 @@ Item berikut tidak termasuk lingkup saat ini:
 
 **Fitur:**
 
-- Tambah resource.
+- Tambah resource, termasuk lampiran berkas multi-berkas.
 - Daftar semua resource.
 - Cari resource.
 - Filter resource.
@@ -416,6 +418,7 @@ Item berikut tidak termasuk lingkup saat ini:
 - URL harus valid.
 - Resource harus berada di folder milik pengguna.
 - Jenis resource dibatasi pada lima nilai.
+- Resource jenis `file` memuat 1–10 berkas PDF/Office, masing-masing maksimal 20 MB; mengedit resource berkas tanpa unggah baru mempertahankan berkas yang ada.
 - Status baca dibatasi pada tiga nilai.
 - Resource yang dipindahkan harus tetap berada di folder milik pengguna.
 
@@ -534,7 +537,7 @@ Item berikut tidak termasuk lingkup saat ini:
 - Teacher/Admin dapat bergabung dengan kode classroom guru lain sebagai co-teacher.
 - Pemilik classroom dapat mengeluarkan co-teacher; co-teacher dapat keluar sendiri.
 - Teacher/Admin pemilik atau co-teacher membuat folder `class_material` atau `assignment` dalam classroom.
-- Resource kelas berupa tautan atau berkas PDF/Office.
+- Resource kelas berupa tautan atau satu set berkas PDF/Office (1–10 berkas per resource).
 - Student mengumpulkan jawaban teks, URL, atau berkas tugas.
 - Submission menyimpan status, nilai, dan feedback pengajar.
 
@@ -842,10 +845,19 @@ erDiagram
         bigint folder_id FK
         string title
         text url "nullable"
-        string file_path "nullable"
         enum resource_type
         text notes
         enum read_status
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    RESOURCE_FILES {
+        bigint id PK
+        bigint resource_id FK
+        string file_path
+        string original_name
+        bigint size "nullable"
         timestamp created_at
         timestamp updated_at
     }
@@ -947,6 +959,7 @@ erDiagram
 | User → Classroom | N : M | Murid mengikuti dan guru mengajar banyak classroom |
 | User (co-teacher) → Classroom | N : M | Pengajar pengikut melalui `classroom_co_teacher` |
 | Submission → SubmissionFile | 1 : N | Satu submission dapat memuat beberapa berkas |
+| Resource → ResourceFile | 1 : N | Satu resource (personal maupun materi kelas) dapat memuat beberapa berkas |
 | User → AdminAuditLog | 1 : N (aktor, target) | Log memakai snapshot nama/email; FK `nullOnDelete` untuk riwayat akun yang dihapus |
 
 ### 9.3 Enum
@@ -1010,6 +1023,8 @@ erDiagram
 | BR-28 | Admin tidak dapat menangguhkan akun sendiri; admin aktif terakhir tidak dapat ditangguhkan, dihapus, atau diturunkan rolenya |
 | BR-29 | Aksi massal melaporkan jumlah akun terproses beserta daftar akun yang dilewati dan alasannya |
 | BR-30 | Export CSV mengikuti filter yang aktif dan disajikan sebagai unduhan streaming dengan BOM UTF-8 |
+| BR-31 | Resource jenis `file` memerlukan minimal satu berkas; daftar berkas dibatasi 10 dengan ukuran maksimal 20 MB per berkas; mengedit tanpa unggah baru mempertahankan berkas yang ada |
+| BR-32 | Berkas materi personal disimpan di disk privat dan disajikan per-berkas melalui route terautentikasi setelah otorisasi |
 
 ### 10.2 Validasi Input
 
@@ -1335,7 +1350,8 @@ Sebuah fitur dianggap selesai jika:
 | FR-32 s.d. FR-39 Classroom & LMS | `ClassroomController`, `SubmissionController`, `ClassroomVisibilityTest`, `SubmissionTest` |
 | FR-43, FR-44 Co-teacher | `ClassroomController::join/removeCoTeacher/leaveCoTeaching`, `CoTeacherTest` |
 | FR-45 Submission multi-berkas | `submission_files` migration, `SubmissionController::file`, `SubmissionTest` |
-| FR-46, FR-47 Preview & conditional field | `ResourceController::preview`, `Resource::is_previewable`, `ResourcePreviewTest`, `ResourceManagementTest` |
+| FR-55, FR-56 Resource multi-berkas | `resource_files` migration, `Resource::storeUploadedFiles/replaceUploadedFiles`, `ResourceFile`, `ResourceController::download/preview`, `ResourceMultiFileTest` |
+| FR-46, FR-47 Preview & conditional field | `ResourceController::download/preview`, `ResourceFile::is_previewable`, `ResourcePreviewTest`, `ResourceManagementTest` |
 | FR-48, FR-49 Suspend & auto-logout | `AdminUserController::suspend/reactivate`, `AuthController::login`, `EnsureAccountIsActive`, `AdminUserStatusTest` |
 | FR-50 Aksi massal | `AdminUserController::bulk`, `admin-bulk-form` di `admin/users/index.blade.php` |
 | FR-51 Export CSV | `AdminUserController::export`, `AdminAuditLogController::export`, `AdminExportsTest` |
