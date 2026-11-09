@@ -155,6 +155,16 @@
                                         <td class="whitespace-nowrap text-xs text-base-content/50">{{ $resource->created_at->diffForHumans() }}</td>
                                         <td>
                                             <div class="flex items-center justify-end gap-1">
+                                                @if($resource->file_path)
+                                                    @if($resource->is_previewable)
+                                                        <a href="{{ route('resources.preview', $resource) }}" target="_blank" rel="noopener" class="icon-action" title="Preview material">
+                                                            <i class="fas fa-eye text-xs"></i>
+                                                        </a>
+                                                    @endif
+                                                    <a href="{{ route('resources.file', $resource) }}" class="icon-action" title="Download material">
+                                                        <i class="fas fa-download text-xs"></i>
+                                                    </a>
+                                                @endif
                                                 <a href="{{ route('resources.edit', $resource->id) }}" class="icon-action" title="Edit resource">
                                                     <i class="fas fa-pen text-xs"></i>
                                                 </a>

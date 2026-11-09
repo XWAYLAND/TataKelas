@@ -52,9 +52,16 @@
                                     <p class="mt-1 text-sm text-base-content/55">{{ $resource->notes }}</p>
                                 </div>
                                 @if($resource->file_path)
-                                    <a class="btn btn-outline btn-sm shrink-0" href="{{ route('resources.file', $resource) }}">
-                                        <i class="fas fa-download"></i> Download file
-                                    </a>
+                                    <div class="flex shrink-0 flex-wrap items-center gap-2">
+                                        @if($resource->is_previewable)
+                                            <a class="btn btn-primary btn-sm" href="{{ route('resources.preview', $resource) }}" target="_blank" rel="noopener">
+                                                <i class="fas fa-eye"></i> Preview
+                                            </a>
+                                        @endif
+                                        <a class="btn btn-outline btn-sm" href="{{ route('resources.file', $resource) }}">
+                                            <i class="fas fa-download"></i> Download file
+                                        </a>
+                                    </div>
                                 @elseif($resource->url)
                                     <a class="btn btn-outline btn-sm shrink-0" href="{{ $resource->url }}" target="_blank" rel="noopener noreferrer">
                                         <i class="fas fa-arrow-up-right-from-square"></i> Open resource
@@ -77,19 +84,19 @@
                         </label>
                         <label class="form-control">
                             <span class="label-text mb-2 font-medium">Type</span>
-                            <select class="select select-bordered w-full" name="resource_type" required>
-                                <option value="url">Link</option>
-                                <option value="file">PDF / document</option>
-                                <option value="video">Video</option>
-                                <option value="documentation">Documentation</option>
-                                <option value="assignment_instruction">Assignment instruction</option>
+                            <select id="classroom-resource-type" class="select select-bordered w-full" name="resource_type" required>
+                                <option value="url" {{ old('resource_type', 'url') === 'url' ? 'selected' : '' }}>Link</option>
+                                <option value="file" {{ old('resource_type') === 'file' ? 'selected' : '' }}>PDF / document</option>
+                                <option value="video" {{ old('resource_type') === 'video' ? 'selected' : '' }}>Video</option>
+                                <option value="documentation" {{ old('resource_type') === 'documentation' ? 'selected' : '' }}>Documentation</option>
+                                <option value="assignment_instruction" {{ old('resource_type') === 'assignment_instruction' ? 'selected' : '' }}>Assignment instruction</option>
                             </select>
                         </label>
                         <label class="form-control">
                             <span class="label-text mb-2 font-medium">URL <span class="text-base-content/45">(leave blank for file upload)</span></span>
-                            <input class="input input-bordered w-full" type="url" name="url" placeholder="https://...">
+                            <input class="input input-bordered w-full" type="url" name="url" value="{{ old('url') }}" placeholder="https://...">
                         </label>
-                        <label class="form-control">
+                        <label id="classroom-file-field" @class(['form-control', 'hidden' => old('resource_type', 'url') !== 'file'])>
                             <span class="label-text mb-2 font-medium">PDF or document</span>
                             <input class="file-input file-input-bordered w-full" type="file" name="file" accept=".pdf,.doc,.docx,.ppt,.pptx">
                             <span class="mt-1 text-xs text-base-content/50">Maximum 20 MB. Files are only downloadable by class members.</span>
@@ -357,6 +364,19 @@
                 render();
                 warning.classList.toggle('hidden', !hitLimit);
             });
+        })();
+
+        (function () {
+            var typeSelect = document.getElementById('classroom-resource-type');
+            var fileField = document.getElementById('classroom-file-field');
+            if (!typeSelect || !fileField) return;
+
+            function toggleFileField() {
+                fileField.classList.toggle('hidden', typeSelect.value !== 'file');
+            }
+
+            typeSelect.addEventListener('change', toggleFileField);
+            toggleFileField();
         })();
     </script>
 @endpush

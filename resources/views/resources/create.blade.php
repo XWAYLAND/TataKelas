@@ -68,7 +68,7 @@
                     @enderror
                 </div>
 
-                <div>
+                <div id="file-field" @class(['hidden' => old('resource_type', 'url') !== 'file'])>
                     <label for="file" class="mb-2 block text-sm font-medium">Upload material <span class="text-base-content/45">(PDF, Word, or PowerPoint · max 20 MB)</span></label>
                     <input type="file" name="file" id="file" accept=".pdf,.doc,.docx,.ppt,.pptx" class="file-input file-input-bordered w-full @error('file') file-input-error @enderror">
                     @error('file')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
@@ -105,3 +105,20 @@
         </form>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        (function () {
+            var typeSelect = document.getElementById('resource_type');
+            var fileField = document.getElementById('file-field');
+            if (!typeSelect || !fileField) return;
+
+            function toggleFileField() {
+                fileField.classList.toggle('hidden', typeSelect.value !== 'file');
+            }
+
+            typeSelect.addEventListener('change', toggleFileField);
+            toggleFileField();
+        })();
+    </script>
+@endpush

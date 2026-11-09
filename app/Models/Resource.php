@@ -54,6 +54,18 @@ class Resource extends Model
     }
 
     /**
+     * Determine whether the attached material can be shown inline in a browser.
+     */
+    public function getIsPreviewableAttribute(): bool
+    {
+        if (! $this->file_path) {
+            return false;
+        }
+
+        return strtolower(pathinfo($this->file_path, PATHINFO_EXTENSION)) === 'pdf';
+    }
+
+    /**
      * Get the resource type badge color.
      */
     public function getTypeBadgeColorAttribute(): string

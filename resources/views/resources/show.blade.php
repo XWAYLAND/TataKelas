@@ -86,9 +86,18 @@
                 </section>
 
                 @if($resource->file_path)
-                    <a href="{{ route('resources.file', $resource) }}" class="btn btn-primary w-full">
-                        <i class="fas fa-download"></i> Download material
-                    </a>
+                    <div class="space-y-2">
+                        @if($resource->is_previewable)
+                            <a href="{{ route('resources.preview', $resource) }}" target="_blank" rel="noopener" class="btn btn-primary w-full">
+                                <i class="fas fa-eye"></i> Preview material
+                            </a>
+                        @else
+                            <p class="text-xs text-base-content/45">Preview is available for PDF files. Download this document to open it.</p>
+                        @endif
+                        <a href="{{ route('resources.file', $resource) }}" class="btn {{ $resource->is_previewable ? 'btn-ghost border-base-300' : 'btn-primary' }} w-full">
+                            <i class="fas fa-download"></i> Download material
+                        </a>
+                    </div>
                 @elseif($resource->url)
                     <a href="{{ $resource->url }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-full">
                         <i class="fas fa-arrow-up-right-from-square"></i> Open Resource

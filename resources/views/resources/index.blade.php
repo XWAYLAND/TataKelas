@@ -120,9 +120,16 @@
                                             <i class="fas fa-arrow-up-right-from-square mr-1 text-[10px]"></i> {{ Str::limit($resource->url, 90) }}
                                         </a>
                                     @elseif($resource->file_path)
-                                        <a href="{{ route('resources.file', $resource) }}" class="mt-1 inline-flex items-center gap-2 text-sm text-primary hover:underline">
-                                            <i class="fas fa-download text-[10px]"></i> Download attached material
-                                        </a>
+                                        <div class="mt-1 flex flex-wrap items-center gap-3">
+                                            @if($resource->is_previewable)
+                                                <a href="{{ route('resources.preview', $resource) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-sm text-primary hover:underline">
+                                                    <i class="fas fa-eye text-[10px]"></i> Preview attached material
+                                                </a>
+                                            @endif
+                                            <a href="{{ route('resources.file', $resource) }}" class="inline-flex items-center gap-2 text-sm text-primary hover:underline">
+                                                <i class="fas fa-download text-[10px]"></i> Download attached material
+                                            </a>
+                                        </div>
                                     @endif
 
                                     @if($resource->notes)

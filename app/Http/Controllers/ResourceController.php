@@ -145,6 +145,25 @@ class ResourceController extends Controller
     }
 
     /**
+     * Stream the attached material inline so it can be previewed in the browser.
+     */
+    public function preview(Resource $resource): StreamedResponse
+    {
+        $this->authorize('view', $resource);
+        abort_unless($resource->file_path && Storage::disk('local')->exists($resource->file_path), 404);
+        abort_unless($resource->is_previewable, 404);
+
+        $extension = pathinfo($resource->file_path, PATHINFO_EXTENSION);
+
+        return Storage::disk('local')->response(
+            $resource->file_path,
+            Str::slug($resource->title).'.'.$extension,
+            [],
+            'inline'
+        );
+    }
+
+    /**
      * Display the specified resource.
      */
     public function show(string $id): View|RedirectResponse

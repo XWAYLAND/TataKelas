@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Resource;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,10 +20,12 @@ class UpdateResourceRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
+        $resource = Resource::find($this->route('resource'));
+
         return [
             'folder_id' => [
                 'required',
@@ -33,7 +37,13 @@ class UpdateResourceRequest extends FormRequest
             ],
             'title' => ['required', 'string', 'max:255'],
             'url' => ['nullable', 'required_unless:resource_type,file', 'url', 'max:2048'],
-            'file' => ['nullable', 'required_if:resource_type,file', 'file', 'mimes:pdf,doc,docx,ppt,pptx', 'max:20480'],
+            'file' => [
+                'nullable',
+                Rule::requiredIf(fn () => $this->input('resource_type') === 'file' && ! $resource?->file_path),
+                'file',
+                'mimes:pdf,doc,docx,ppt,pptx',
+                'max:20480',
+            ],
             'resource_type' => ['required', Rule::in(['url', 'file', 'video', 'documentation', 'assignment_instruction'])],
             'notes' => ['nullable', 'string', 'max:5000'],
             'read_status' => ['required', Rule::in(['to_read', 'reading', 'completed'])],

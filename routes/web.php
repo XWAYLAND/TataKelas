@@ -82,6 +82,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/resources/{resource}/file', [ResourceController::class, 'classroomFile'])
         ->name('resources.file');
+    Route::get('/resources/{resource}/preview', [ResourceController::class, 'preview'])
+        ->name('resources.preview');
     Route::get('/submission-files/{file}', [SubmissionController::class, 'file'])
         ->name('submissions.files.download');
 

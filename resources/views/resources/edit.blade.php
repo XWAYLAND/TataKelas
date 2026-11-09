@@ -68,7 +68,7 @@
                     @enderror
                 </div>
 
-                <div>
+                <div id="file-field" @class(['hidden' => old('resource_type', $resource->resource_type) !== 'file'])>
                     <label for="file" class="mb-2 block text-sm font-medium">Replace attached material <span class="text-base-content/45">(optional · max 20 MB)</span></label>
                     <input type="file" name="file" id="file" accept=".pdf,.doc,.docx,.ppt,.pptx" class="file-input file-input-bordered w-full @error('file') file-input-error @enderror">
                     @if($resource->file_path)<p class="mt-1 text-xs text-base-content/55">A file is currently attached.</p>@endif
@@ -105,3 +105,20 @@
         </form>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        (function () {
+            var typeSelect = document.getElementById('resource_type');
+            var fileField = document.getElementById('file-field');
+            if (!typeSelect || !fileField) return;
+
+            function toggleFileField() {
+                fileField.classList.toggle('hidden', typeSelect.value !== 'file');
+            }
+
+            typeSelect.addEventListener('change', toggleFileField);
+            toggleFileField();
+        })();
+    </script>
+@endpush
