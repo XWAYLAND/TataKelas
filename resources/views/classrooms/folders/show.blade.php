@@ -102,7 +102,7 @@
                         </label>
                         <label id="classroom-file-field" @class(['form-control', 'hidden' => old('resource_type', 'url') !== 'file'])>
                             <span class="label-text mb-2 font-medium">PDF or documents <span class="text-base-content/45">(multiple allowed)</span></span>
-                            <input class="file-input file-input-bordered w-full" type="file" name="files[]" accept=".pdf,.doc,.docx,.ppt,.pptx" multiple>
+                            <input id="classroom-resource-files" class="file-input file-input-bordered w-full" type="file" name="files[]" accept=".pdf,.doc,.docx,.ppt,.pptx" multiple data-file-picker>
                             <span class="mt-1 text-xs text-base-content/50">Up to 10 files, max 20 MB each. Files are only downloadable by class members.</span>
                         </label>
                         <label class="form-control md:col-span-2">
@@ -233,15 +233,8 @@
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div class="form-control">
                             <label for="submission-files" class="label-text mb-2 font-medium">Attach files</label>
-                            <input id="submission-files" class="file-input file-input-bordered w-full" type="file" name="files[]" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip" multiple>
+                            <input id="submission-files" class="file-input file-input-bordered w-full" type="file" name="files[]" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip" multiple data-file-picker>
                             <span class="mt-1 text-xs text-base-content/50">PDF, Office documents, or ZIP · up to 10 files · max 20 MB each</span>
-                            <p id="submission-files-warning" class="mt-1 hidden text-xs font-medium text-warning">Only the first 10 files are kept. Remove one file before adding another.</p>
-                            <div id="submission-files-panel" class="mt-2 hidden overflow-hidden rounded-xl border border-base-300/80 bg-base-100">
-                                <p class="border-b border-base-300/70 px-3 py-2 text-xs font-medium text-base-content/65">
-                                    Selected files <span id="submission-files-count" class="text-base-content/45"></span>
-                                </p>
-                                <ul id="submission-files-items" class="divide-y divide-base-300/70"></ul>
-                            </div>
                         </div>
                         <label class="form-control">
                             <span class="label-text mb-2 font-medium">Or submit a link</span>
@@ -282,93 +275,7 @@
 
 @push('scripts')
     <script>
-        (function () {
-            var input = document.getElementById('submission-files');
-            if (!input || typeof DataTransfer === 'undefined') return;
-
-            var maxFiles = 10;
-            var selected = [];
-            var panel = document.getElementById('submission-files-panel');
-            var items = document.getElementById('submission-files-items');
-            var count = document.getElementById('submission-files-count');
-            var warning = document.getElementById('submission-files-warning');
-
-            function formatSize(bytes) {
-                if (bytes < 1024) return bytes + ' B';
-                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-                return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-            }
-
-            function syncInput() {
-                var transfer = new DataTransfer();
-                selected.forEach(function (file) {
-                    transfer.items.add(file);
-                });
-                input.files = transfer.files;
-            }
-
-            function render() {
-                items.innerHTML = '';
-                panel.classList.toggle('hidden', selected.length === 0);
-                count.textContent = selected.length ? '(' + selected.length + ' / ' + maxFiles + ')' : '';
-
-                selected.forEach(function (file, index) {
-                    var row = document.createElement('li');
-                    row.className = 'flex items-center justify-between gap-3 px-3 py-2';
-
-                    var info = document.createElement('div');
-                    info.className = 'min-w-0';
-
-                    var name = document.createElement('p');
-                    name.className = 'truncate text-sm font-medium';
-                    name.textContent = file.name;
-
-                    var meta = document.createElement('p');
-                    meta.className = 'text-xs text-base-content/50';
-                    meta.textContent = formatSize(file.size);
-
-                    info.append(name, meta);
-
-                    var remove = document.createElement('button');
-                    remove.type = 'button';
-                    remove.className = 'btn btn-ghost btn-xs shrink-0 text-error';
-                    remove.setAttribute('aria-label', 'Remove ' + file.name);
-                    remove.innerHTML = '<i class="fas fa-xmark"></i> Remove';
-                    remove.addEventListener('click', function () {
-                        selected.splice(index, 1);
-                        syncInput();
-                        render();
-                        warning.classList.add('hidden');
-                    });
-
-                    row.append(info, remove);
-                    items.appendChild(row);
-                });
-            }
-
-            input.addEventListener('change', function () {
-                var hitLimit = false;
-
-                Array.prototype.forEach.call(input.files, function (file) {
-                    if (selected.length >= maxFiles) {
-                        hitLimit = true;
-                        return;
-                    }
-
-                    var duplicate = selected.some(function (existing) {
-                        return existing.name === file.name
-                            && existing.size === file.size
-                            && existing.lastModified === file.lastModified;
-                    });
-
-                    if (!duplicate) selected.push(file);
-                });
-
-                syncInput();
-                render();
-                warning.classList.toggle('hidden', !hitLimit);
-            });
-        })();
+        @include('partials.file-picker')
 
         (function () {
             var typeSelect = document.getElementById('classroom-resource-type');

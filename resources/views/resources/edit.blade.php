@@ -70,7 +70,7 @@
 
                 <div id="file-field" @class(['hidden' => old('resource_type', $resource->resource_type) !== 'file'])>
                     <label for="files" class="mb-2 block text-sm font-medium">Replace attached materials <span class="text-base-content/45">(optional · up to 10 files · max 20 MB each)</span></label>
-                    <input type="file" name="files[]" id="files" accept=".pdf,.doc,.docx,.ppt,.pptx" multiple class="file-input file-input-bordered w-full @error('files.*') file-input-error @enderror">
+                    <input type="file" name="files[]" id="files" accept=".pdf,.doc,.docx,.ppt,.pptx" multiple class="file-input file-input-bordered w-full @error('files.*') file-input-error @enderror" data-file-picker>
                     @if($resource->files->isNotEmpty())
                         <div class="mt-2 space-y-1 text-xs text-base-content/55">
                             <p class="font-medium text-base-content/70">Currently attached:</p>
@@ -124,6 +124,7 @@
 @endsection
 
 @push('scripts')
+    @include('partials.file-picker')
     <script>
         (function () {
             var typeSelect = document.getElementById('resource_type');

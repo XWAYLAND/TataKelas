@@ -70,7 +70,7 @@
 
                 <div id="file-field" @class(['hidden' => old('resource_type', 'url') !== 'file'])>
                     <label for="files" class="mb-2 block text-sm font-medium">Upload materials <span class="text-base-content/45">(PDF, Word, or PowerPoint · up to 10 files · max 20 MB each)</span></label>
-                    <input type="file" name="files[]" id="files" accept=".pdf,.doc,.docx,.ppt,.pptx" multiple class="file-input file-input-bordered w-full @error('files.*') file-input-error @enderror">
+                    <input type="file" name="files[]" id="files" accept=".pdf,.doc,.docx,.ppt,.pptx" multiple class="file-input file-input-bordered w-full @error('files.*') file-input-error @enderror" data-file-picker>
                     @error('files')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
                     @error('files.*')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
                 </div>
@@ -108,6 +108,7 @@
 @endsection
 
 @push('scripts')
+    @include('partials.file-picker')
     <script>
         (function () {
             var typeSelect = document.getElementById('resource_type');
