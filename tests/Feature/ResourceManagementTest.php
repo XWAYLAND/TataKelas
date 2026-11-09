@@ -12,7 +12,7 @@ class ResourceManagementTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_document_resource_can_be_updated_without_replacing_its_file(): void
+    public function test_document_resource_can_be_updated_without_replacing_its_files(): void
     {
         Storage::fake('local');
 
@@ -25,11 +25,15 @@ class ResourceManagementTest extends TestCase
         $resource = Resource::withoutGlobalScopes()->create([
             'folder_id' => $folder->id,
             'title' => 'Original title',
-            'file_path' => 'personal-resources/guide.pdf',
             'resource_type' => 'file',
             'read_status' => 'to_read',
         ]);
-        Storage::disk('local')->put($resource->file_path, '%PDF-1.4 fake content');
+        $file = $resource->files()->create([
+            'file_path' => 'personal-resources/guide.pdf',
+            'original_name' => 'guide.pdf',
+            'size' => 20,
+        ]);
+        Storage::disk('local')->put($file->file_path, '%PDF-1.4 fake content');
 
         $this->actingAs($user)
             ->put(route('resources.update', $resource), [
@@ -41,10 +45,11 @@ class ResourceManagementTest extends TestCase
             ])
             ->assertRedirect(route('folders.show', $folder));
 
-        $resource->refresh();
+        $resource->refresh()->load('files');
 
         $this->assertSame('Updated title', $resource->title);
-        $this->assertSame('personal-resources/guide.pdf', $resource->file_path);
-        Storage::disk('local')->assertExists($resource->file_path);
+        $this->assertSame(1, $resource->files->count());
+        $this->assertSame('personal-resources/guide.pdf', $resource->files->first()->file_path);
+        Storage::disk('local')->assertExists($file->file_path);
     }
 }

@@ -119,16 +119,18 @@
                                         <a href="{{ $resource->url }}" target="_blank" rel="noopener noreferrer" class="mt-1 inline-block break-all text-sm text-primary hover:underline">
                                             <i class="fas fa-arrow-up-right-from-square mr-1 text-[10px]"></i> {{ Str::limit($resource->url, 90) }}
                                         </a>
-                                    @elseif($resource->file_path)
+                                    @elseif($resource->files->isNotEmpty())
                                         <div class="mt-1 flex flex-wrap items-center gap-3">
-                                            @if($resource->is_previewable)
-                                                <a href="{{ route('resources.preview', $resource) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-sm text-primary hover:underline">
-                                                    <i class="fas fa-eye text-[10px]"></i> Preview attached material
+                                            @foreach($resource->files as $file)
+                                                @if($file->is_previewable)
+                                                    <a href="{{ route('resources.files.preview', [$resource, $file]) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-sm text-primary hover:underline">
+                                                        <i class="fas fa-eye text-[10px]"></i> Preview {{ Str::limit($file->original_name, 30) }}
+                                                    </a>
+                                                @endif
+                                                <a href="{{ route('resources.files.download', [$resource, $file]) }}" class="inline-flex items-center gap-2 text-sm text-primary hover:underline">
+                                                    <i class="fas fa-download text-[10px]"></i> Download {{ Str::limit($file->original_name, 30) }}
                                                 </a>
-                                            @endif
-                                            <a href="{{ route('resources.file', $resource) }}" class="inline-flex items-center gap-2 text-sm text-primary hover:underline">
-                                                <i class="fas fa-download text-[10px]"></i> Download attached material
-                                            </a>
+                                            @endforeach
                                         </div>
                                     @endif
 

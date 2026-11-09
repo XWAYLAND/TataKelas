@@ -156,7 +156,7 @@ class ClassroomController extends Controller
         abort_unless((int) $folder->classroom_id === (int) $classroom->id, 404);
         $this->authorize('view', $folder);
 
-        $folder->load('resources');
+        $folder->load(['resources.files']);
 
         $canManage = auth()->user()->can('createClassFolder', $classroom);
         $submission = $canManage

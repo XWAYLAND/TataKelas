@@ -8,12 +8,13 @@ use App\Http\Requests\UpdateResourceRequest;
 use App\Models\Classroom;
 use App\Models\Folder;
 use App\Models\Resource;
+use App\Models\ResourceFile;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -25,7 +26,7 @@ class ResourceController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = Resource::with('folder')
+        $query = Resource::with(['folder', 'files'])
             ->whereHas('folder', fn ($folderQuery) => $folderQuery->whereNull('classroom_id'));
 
         // Search filter (title and notes)
@@ -83,16 +84,18 @@ class ResourceController extends Controller
     {
         try {
             $validatedData = $request->validated();
-            if ($request->hasFile('file')) {
-                $file = $request->file('file');
-                $validatedData['file_path'] = $file->storeAs(
-                    'personal-resources',
-                    Str::uuid().'.'.$file->extension(),
-                    'local'
-                );
-            }
-            unset($validatedData['file']);
-            $resource = Resource::create($validatedData);
+            $uploads = $request->file('files');
+            unset($validatedData['files']);
+
+            $resource = DB::transaction(function () use ($validatedData, $uploads): Resource {
+                $resource = Resource::create($validatedData);
+
+                if ($uploads !== null) {
+                    $resource->storeUploadedFiles($uploads, 'personal-resources');
+                }
+
+                return $resource;
+            });
 
             return redirect()
                 ->route('folders.show', $resource->folder_id)
@@ -110,57 +113,47 @@ class ResourceController extends Controller
         $this->authorize('create', [Resource::class, $folder]);
 
         $validated = $request->validated();
-        $data = [
-            'title' => $validated['title'],
-            'url' => $validated['url'] ?? null,
-            'resource_type' => $validated['resource_type'],
-            'notes' => $validated['notes'] ?? null,
-            'read_status' => 'to_read',
-        ];
+        $uploads = $request->file('files');
 
-        if ($request->hasFile('file')) {
-            $file = $request->file('file');
-            $data['file_path'] = $file->storeAs(
-                'class-materials',
-                Str::uuid().'.'.$file->extension(),
-                'local'
-            );
-        }
+        $resource = DB::transaction(function () use ($folder, $validated, $uploads): Resource {
+            $resource = $folder->resources()->create([
+                'title' => $validated['title'],
+                'url' => $validated['url'] ?? null,
+                'resource_type' => $validated['resource_type'],
+                'notes' => $validated['notes'] ?? null,
+                'read_status' => 'to_read',
+            ]);
 
-        $folder->resources()->create($data);
+            if ($uploads !== null) {
+                $resource->storeUploadedFiles($uploads, 'class-materials');
+            }
+
+            return $resource;
+        });
 
         return redirect()
             ->route('classrooms.folders.show', [$folder->classroom_id, $folder])
             ->with('success', 'Learning resource added.');
     }
 
-    public function classroomFile(Resource $resource): StreamedResponse
+    public function download(Resource $resource, ResourceFile $file): StreamedResponse
     {
         $this->authorize('view', $resource);
-        abort_unless($resource->file_path && Storage::disk('local')->exists($resource->file_path), 404);
+        abort_unless(Storage::disk('local')->exists($file->file_path), 404);
 
-        $extension = pathinfo($resource->file_path, PATHINFO_EXTENSION);
-
-        return Storage::disk('local')->download($resource->file_path, Str::slug($resource->title).'.'.$extension);
+        return Storage::disk('local')->download($file->file_path, $file->original_name);
     }
 
     /**
-     * Stream the attached material inline so it can be previewed in the browser.
+     * Stream an attached material inline so it can be previewed in the browser.
      */
-    public function preview(Resource $resource): StreamedResponse
+    public function preview(Resource $resource, ResourceFile $file): StreamedResponse
     {
         $this->authorize('view', $resource);
-        abort_unless($resource->file_path && Storage::disk('local')->exists($resource->file_path), 404);
-        abort_unless($resource->is_previewable, 404);
+        abort_unless(Storage::disk('local')->exists($file->file_path), 404);
+        abort_unless($file->is_previewable, 404);
 
-        $extension = pathinfo($resource->file_path, PATHINFO_EXTENSION);
-
-        return Storage::disk('local')->response(
-            $resource->file_path,
-            Str::slug($resource->title).'.'.$extension,
-            [],
-            'inline'
-        );
+        return Storage::disk('local')->response($file->file_path, $file->original_name, [], 'inline');
     }
 
     /**
@@ -169,7 +162,7 @@ class ResourceController extends Controller
     public function show(string $id): View|RedirectResponse
     {
         try {
-            $resource = Resource::with('folder')->findOrFail($id);
+            $resource = Resource::with(['folder', 'files'])->findOrFail($id);
             $this->authorize('view', $resource);
 
             if ($resource->folder->classroom_id) {
@@ -195,7 +188,7 @@ class ResourceController extends Controller
     public function edit(string $id): View|RedirectResponse
     {
         try {
-            $resource = Resource::findOrFail($id);
+            $resource = Resource::with(['files', 'folder'])->findOrFail($id);
             $this->authorize('update', $resource);
             $folders = Folder::whereNull('classroom_id')
                 ->where('user_id', auth()->id())
@@ -221,19 +214,16 @@ class ResourceController extends Controller
             $resource = Resource::findOrFail($id);
             $this->authorize('update', $resource);
             $validatedData = $request->validated();
-            if ($request->hasFile('file')) {
-                if ($resource->file_path) {
-                    Storage::disk('local')->delete($resource->file_path);
+            unset($validatedData['files']);
+
+            $uploads = $request->file('files');
+            DB::transaction(function () use ($resource, $validatedData, $uploads): void {
+                $resource->update($validatedData);
+
+                if ($uploads !== null) {
+                    $resource->replaceUploadedFiles($uploads, 'personal-resources');
                 }
-                $file = $request->file('file');
-                $validatedData['file_path'] = $file->storeAs(
-                    'personal-resources',
-                    Str::uuid().'.'.$file->extension(),
-                    'local'
-                );
-            }
-            unset($validatedData['file']);
-            $resource->update($validatedData);
+            });
 
             return redirect()
                 ->route('folders.show', $resource->folder_id)

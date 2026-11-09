@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,7 +19,7 @@ class StoreResourceRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -33,7 +34,8 @@ class StoreResourceRequest extends FormRequest
             ],
             'title' => ['required', 'string', 'max:255'],
             'url' => ['nullable', 'required_unless:resource_type,file', 'url', 'max:2048'],
-            'file' => ['nullable', 'required_if:resource_type,file', 'file', 'mimes:pdf,doc,docx,ppt,pptx', 'max:20480'],
+            'files' => ['nullable', 'array', 'max:10', 'required_if:resource_type,file'],
+            'files.*' => ['file', 'mimes:pdf,doc,docx,ppt,pptx', 'max:20480'],
             'resource_type' => ['required', Rule::in(['url', 'file', 'video', 'documentation', 'assignment_instruction'])],
             'notes' => ['nullable', 'string', 'max:5000'],
             'read_status' => ['required', Rule::in(['to_read', 'reading', 'completed'])],
@@ -51,6 +53,8 @@ class StoreResourceRequest extends FormRequest
             'folder_id' => 'folder',
             'title' => 'resource title',
             'url' => 'resource URL',
+            'files' => 'attached files',
+            'files.*' => 'attached file',
             'resource_type' => 'resource type',
             'notes' => 'notes',
             'read_status' => 'read status',
@@ -85,11 +89,11 @@ class StoreResourceRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         // Set default values if not provided
-        if (!$this->has('resource_type')) {
+        if (! $this->has('resource_type')) {
             $this->merge(['resource_type' => 'url']);
         }
 
-        if (!$this->has('read_status')) {
+        if (! $this->has('read_status')) {
             $this->merge(['read_status' => 'to_read']);
         }
     }

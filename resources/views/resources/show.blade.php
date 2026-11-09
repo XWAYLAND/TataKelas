@@ -85,19 +85,29 @@
                     </form>
                 </section>
 
-                @if($resource->file_path)
-                    <div class="space-y-2">
-                        @if($resource->is_previewable)
-                            <a href="{{ route('resources.preview', $resource) }}" target="_blank" rel="noopener" class="btn btn-primary w-full">
-                                <i class="fas fa-eye"></i> Preview material
-                            </a>
-                        @else
-                            <p class="text-xs text-base-content/45">Preview is available for PDF files. Download this document to open it.</p>
-                        @endif
-                        <a href="{{ route('resources.file', $resource) }}" class="btn {{ $resource->is_previewable ? 'btn-ghost border-base-300' : 'btn-primary' }} w-full">
-                            <i class="fas fa-download"></i> Download material
-                        </a>
-                    </div>
+                @if($resource->files->isNotEmpty())
+                    <section class="app-surface p-5">
+                        <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/50">Attached materials ({{ $resource->files->count() }})</h2>
+                        <ul class="mt-3 space-y-3">
+                            @foreach($resource->files as $file)
+                                <li class="flex items-center justify-between gap-3 rounded-lg border border-base-300/70 px-3 py-2">
+                                    <span class="min-w-0 flex-1 truncate text-sm" title="{{ $file->original_name }}">
+                                        <i class="far fa-file-pdf mr-1 text-xs text-base-content/55"></i> {{ $file->original_name }}
+                                        <span class="ml-1 text-xs text-base-content/45">{{ number_format($file->size / 1024, 0) }} KB</span>
+                                    </span>
+                                    <span class="flex shrink-0 items-center gap-2">
+                                        @if($file->is_previewable)
+                                            <a href="{{ route('resources.files.preview', [$resource, $file]) }}" target="_blank" rel="noopener" class="icon-action" title="Preview file"><i class="fas fa-eye text-xs"></i></a>
+                                        @endif
+                                        <a href="{{ route('resources.files.download', [$resource, $file]) }}" class="icon-action" title="Download file"><i class="fas fa-download text-xs"></i></a>
+                                    </span>
+                                </li>
+                            @endforeach
+                        </ul>
+                        @unless($resource->files->contains('is_previewable'))
+                            <p class="mt-2 text-xs text-base-content/45">Preview is available for PDF files. Download a document to open it.</p>
+                        @endunless
+                    </section>
                 @elseif($resource->url)
                     <a href="{{ $resource->url }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-full">
                         <i class="fas fa-arrow-up-right-from-square"></i> Open Resource

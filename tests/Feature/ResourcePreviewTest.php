@@ -17,10 +17,10 @@ class ResourcePreviewTest extends TestCase
         Storage::fake('local');
 
         $user = User::factory()->create();
-        $resource = $this->fileResource($user, 'personal-resources/guide.pdf');
-        Storage::disk('local')->put($resource->file_path, '%PDF-1.4 fake content');
+        $file = $this->fileResourceFile($user, 'personal-resources/guide.pdf');
+        Storage::disk('local')->put($file->file_path, '%PDF-1.4 fake content');
 
-        $response = $this->actingAs($user)->get(route('resources.preview', $resource));
+        $response = $this->actingAs($user)->get(route('resources.files.preview', [$file->resource, $file]));
 
         $response->assertOk();
         $response->assertHeader('Content-Type', 'application/pdf');
@@ -32,11 +32,11 @@ class ResourcePreviewTest extends TestCase
         Storage::fake('local');
 
         $user = User::factory()->create();
-        $resource = $this->fileResource($user, 'personal-resources/guide.docx');
-        Storage::disk('local')->put($resource->file_path, 'fake document');
+        $file = $this->fileResourceFile($user, 'personal-resources/guide.docx');
+        Storage::disk('local')->put($file->file_path, 'fake document');
 
         $this->actingAs($user)
-            ->get(route('resources.preview', $resource))
+            ->get(route('resources.files.preview', [$file->resource, $file]))
             ->assertNotFound();
     }
 
@@ -46,15 +46,29 @@ class ResourcePreviewTest extends TestCase
 
         $owner = User::factory()->create();
         $otherUser = User::factory()->create();
-        $resource = $this->fileResource($owner, 'personal-resources/private.pdf');
-        Storage::disk('local')->put($resource->file_path, '%PDF-1.4 private content');
+        $resource = Resource::withoutGlobalScopes()->create([
+            'folder_id' => $owner->folders()->create([
+                'name' => 'Study materials',
+                'color_code' => '#3B82F6',
+                'visibility' => 'private',
+            ])->id,
+            'title' => 'Guide',
+            'resource_type' => 'file',
+            'read_status' => 'to_read',
+        ]);
+        $file = $resource->files()->create([
+            'file_path' => 'personal-resources/private.pdf',
+            'original_name' => 'private.pdf',
+            'size' => 24,
+        ]);
+        Storage::disk('local')->put($file->file_path, '%PDF-1.4 private content');
 
         $this->actingAs($otherUser)
-            ->get(route('resources.preview', $resource))
+            ->get(route('resources.files.preview', ['resource' => $resource, 'file' => $file]))
             ->assertNotFound();
     }
 
-    private function fileResource(User $owner, string $path): Resource
+    private function fileResourceFile(User $owner, string $path)
     {
         $folder = $owner->folders()->create([
             'name' => 'Study materials',
@@ -62,12 +76,17 @@ class ResourcePreviewTest extends TestCase
             'visibility' => 'private',
         ]);
 
-        return Resource::withoutGlobalScopes()->create([
+        $resource = Resource::withoutGlobalScopes()->create([
             'folder_id' => $folder->id,
             'title' => 'Guide',
-            'file_path' => $path,
             'resource_type' => 'file',
             'read_status' => 'to_read',
+        ]);
+
+        return $resource->files()->create([
+            'file_path' => $path,
+            'original_name' => basename($path),
+            'size' => 20,
         ]);
     }
 }

@@ -88,10 +88,12 @@ Route::middleware(['auth', 'active'])->group(function () {
             ->name('folders.submissions.destroy');
     });
 
-    Route::get('/resources/{resource}/file', [ResourceController::class, 'classroomFile'])
-        ->name('resources.file');
-    Route::get('/resources/{resource}/preview', [ResourceController::class, 'preview'])
-        ->name('resources.preview');
+    Route::get('/resources/{resource}/files/{file}', [ResourceController::class, 'download'])
+        ->scopeBindings()
+        ->name('resources.files.download');
+    Route::get('/resources/{resource}/files/{file}/preview', [ResourceController::class, 'preview'])
+        ->scopeBindings()
+        ->name('resources.files.preview');
     Route::get('/submission-files/{file}', [SubmissionController::class, 'file'])
         ->name('submissions.files.download');
 

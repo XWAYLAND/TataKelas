@@ -20,7 +20,8 @@ class StoreClassResourceRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'resource_type' => ['required', Rule::in(['url', 'file', 'video', 'documentation', 'assignment_instruction'])],
             'url' => ['nullable', 'required_unless:resource_type,file', 'url', 'max:2048'],
-            'file' => ['nullable', 'required_if:resource_type,file', 'file', 'mimes:pdf,doc,docx,ppt,pptx', 'max:20480'],
+            'files' => ['nullable', 'array', 'max:10', 'required_if:resource_type,file'],
+            'files.*' => ['file', 'mimes:pdf,doc,docx,ppt,pptx', 'max:20480'],
             'notes' => ['nullable', 'string', 'max:5000'],
         ];
     }

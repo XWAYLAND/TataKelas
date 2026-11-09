@@ -69,10 +69,27 @@
                 </div>
 
                 <div id="file-field" @class(['hidden' => old('resource_type', $resource->resource_type) !== 'file'])>
-                    <label for="file" class="mb-2 block text-sm font-medium">Replace attached material <span class="text-base-content/45">(optional · max 20 MB)</span></label>
-                    <input type="file" name="file" id="file" accept=".pdf,.doc,.docx,.ppt,.pptx" class="file-input file-input-bordered w-full @error('file') file-input-error @enderror">
-                    @if($resource->file_path)<p class="mt-1 text-xs text-base-content/55">A file is currently attached.</p>@endif
-                    @error('file')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
+                    <label for="files" class="mb-2 block text-sm font-medium">Replace attached materials <span class="text-base-content/45">(optional · up to 10 files · max 20 MB each)</span></label>
+                    <input type="file" name="files[]" id="files" accept=".pdf,.doc,.docx,.ppt,.pptx" multiple class="file-input file-input-bordered w-full @error('files.*') file-input-error @enderror">
+                    @if($resource->files->isNotEmpty())
+                        <div class="mt-2 space-y-1 text-xs text-base-content/55">
+                            <p class="font-medium text-base-content/70">Currently attached:</p>
+                            <ul class="ml-4 list-disc">
+                                @foreach($resource->files as $file)
+                                    <li>
+                                        {{ $file->original_name }}
+                                        @if($file->is_previewable)
+                                            · <a class="link" href="{{ route('resources.files.preview', [$resource, $file]) }}" target="_blank" rel="noopener">preview</a>
+                                        @endif
+                                        · <a class="link" href="{{ route('resources.files.download', [$resource, $file]) }}">download</a>
+                                    </li>
+                                @endforeach
+                            </ul>
+                            <p class="mt-1">Uploading new files below replaces all of them.</p>
+                        </div>
+                    @endif
+                    @error('files')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
+                    @error('files.*')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
                 </div>
 
                 <div>

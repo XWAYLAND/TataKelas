@@ -6,8 +6,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Resource extends Model
 {
@@ -24,9 +26,9 @@ class Resource extends Model
         });
 
         static::deleting(function (Resource $resource): void {
-            if ($resource->file_path) {
-                Storage::disk('local')->delete($resource->file_path);
-            }
+            // Database cascade deletes file rows without firing model events,
+            // so remove the physical files before the resource is deleted.
+            $resource->files()->get()->each->delete();
         });
     }
 
@@ -39,7 +41,6 @@ class Resource extends Model
         'folder_id',
         'title',
         'url',
-        'file_path',
         'resource_type',
         'notes',
         'read_status',
@@ -54,15 +55,19 @@ class Resource extends Model
     }
 
     /**
-     * Determine whether the attached material can be shown inline in a browser.
+     * Get the attached material files (PDF/Office documents).
+     */
+    public function files(): HasMany
+    {
+        return $this->hasMany(ResourceFile::class);
+    }
+
+    /**
+     * Determine whether any attached material can be shown inline in a browser.
      */
     public function getIsPreviewableAttribute(): bool
     {
-        if (! $this->file_path) {
-            return false;
-        }
-
-        return strtolower(pathinfo($this->file_path, PATHINFO_EXTENSION)) === 'pdf';
+        return $this->files->contains(fn (ResourceFile $file) => $file->is_previewable);
     }
 
     /**
@@ -91,5 +96,34 @@ class Resource extends Model
             'completed' => 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200',
             default => 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
         };
+    }
+
+    /**
+     * Store uploaded material files for the resource on the private disk.
+     *
+     * @param  iterable<int, UploadedFile>  $uploads
+     */
+    public function storeUploadedFiles(iterable $uploads, string $directory): void
+    {
+        foreach ($uploads as $upload) {
+            $path = $upload->storeAs($directory, Str::uuid().'.'.$upload->extension(), 'local');
+
+            $this->files()->create([
+                'file_path' => $path,
+                'original_name' => Str::limit($upload->getClientOriginalName(), 255, ''),
+                'size' => $upload->getSize(),
+            ]);
+        }
+    }
+
+    /**
+     * Replace every attached file with a fresh set of uploads.
+     *
+     * @param  iterable<int, UploadedFile>  $uploads
+     */
+    public function replaceUploadedFiles(iterable $uploads, string $directory): void
+    {
+        $this->files()->get()->each->delete();
+        $this->storeUploadedFiles($uploads, $directory);
     }
 }

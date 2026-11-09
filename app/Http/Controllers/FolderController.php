@@ -87,6 +87,7 @@ class FolderController extends Controller
 
             // Only the active tab's rows are loaded, 15/12 at a time.
             $resources = $folder->resources()
+                ->with('files')
                 ->orderByDesc('created_at')
                 ->orderByDesc('id')
                 ->paginate(15, ['*'], 'resources_page')
