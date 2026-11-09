@@ -29,8 +29,10 @@ The application is used by students, teachers, and administrators through a resp
 - Public registration creates student accounts; teacher and admin roles are assigned administratively.
 - Students and teachers can use private personal workspaces; administrators do not access personal folders, resources, notes, or photos. Classroom content remains available to eligible classroom members, the owning teacher, and co-teachers.
 - The application uses Laravel, Blade, Tailwind CSS, and MySQL/MariaDB or SQLite.
-- Email-based password reset and email verification are not implemented.
-- System-wide account management and audit logging are being added as part of this work.
+- Email-based password reset, email verification, and two-factor authentication are not implemented.
+- System-wide account management and an admin audit log are implemented: role changes, suspension, password resets, bulk actions, and CSV exports are available in the admin panel with every action recorded.
+- Suspending an account blocks further logins and ends the account's active session immediately.
+- Documents uploaded as learning materials can be previewed in the browser without downloading.
 
 ## Evidence on Hand
 

@@ -77,9 +77,11 @@ TataKelas mengelompokkan bahan belajar ke dalam folder, misalnya `Laravel Develo
 
 - Guru dan admin dapat membuat classroom dengan kode gabung.
 - Murid dapat bergabung menggunakan kode dari guru.
+- Guru lain dapat bergabung ke classroom sebagai **co-teacher** melalui kode kelas yang sama. Co-teacher dapat mengelola materi dan menilai submission; hanya pemilik classroom yang dapat mengubah pengaturan atau mengeluarkan co-teacher. Co-teacher juga dapat keluar sendiri.
 - Guru/admin dapat membagikan folder materi atau tugas ke classroom.
 - Materi mendukung tautan dan file PDF/Office yang diunduh melalui route terautentikasi oleh anggota kelas.
-- Tugas memiliki instruksi dan tenggat, serta menerima jawaban teks, URL, atau file.
+- **Materi PDF dapat dipratinjau langsung di browser** (preview) tanpa perlu diunduh, melalui route terautentikasi `resources.preview`.
+- Tugas memiliki instruksi dan tenggat, serta menerima jawaban teks, URL, atau beberapa berkas sekaligus.
 - Pengumpulan terlambat tetap diterima dan diberi status `late`; guru/admin classroom memberi nilai 0–100 dan feedback.
 - File materi dan submission disimpan di disk privat, bukan URL publik.
 
@@ -87,12 +89,31 @@ TataKelas mengelompokkan bahan belajar ke dalam folder, misalnya `Laravel Develo
 
 - Menambah bookmark/resource ke folder.
 - Jenis resource: `url`, `file`, `video`, `documentation`, `assignment_instruction`.
+- **Field upload berkas hanya tampil ketika jenis resource adalah `file` (PDF/dokumen)**; memilih jenis lain menyembunyikan field tersebut secara otomatis. Perilaku yang sama berlaku pada form materi/tugas classroom, termasuk ketika form memuat data lama (validasi error).
+- Mengubah resource berkas tanpa mengunggah ulang berkas baru.
+- **PDF dapat dipratinjau di browser** melalui route terautentikasi `resources.preview` tanpa proses download; tombol unduh tetap tersedia.
 - Status baca: `to_read`, `reading`, `completed`.
 - Mengubah status baca langsung dari daftar resource.
 - Memindahkan resource ke folder lain.
 - Mencari resource berdasarkan judul, URL, atau catatan.
 - Memfilter resource berdasarkan folder, jenis, dan status baca.
 - Pagination 20 item per halaman.
+
+### Administrasi Sistem (Admin)
+
+- **Dashboard admin** `/admin` dengan ringkasan akun per role/status, classroom, resource, submission belum dinilai, akun baru 30 hari, dan aktivitas admin terbaru.
+- **Direktori pengguna** `/admin/users` dengan pencarian nama/email, filter role, status, verifikasi email, rentang tanggal bergabung, sorting, pagination, dan ringkasan jumlah per kategori.
+- **Detail pengguna** `/admin/users/{id}` berisi classroom yang diajar/diikuti/dibantu, jumlah data terkait, login terakhir, status akun, dan riwayat audit akun tersebut.
+- **Penangguhan akun (suspend)** dengan alasan opsional. Akun ditangguhkan:
+  - tidak dapat login (validasi saat `AuthController@login` menolak kredensial yang benar);
+  - langsung di-logout dari sesi aktif melalui middleware `active` yang melekat pada seluruh route terautentikasi;
+  - remember-me dihapus karena `remember_token` dirotasi.
+- **Reaktivasi akun** mengembalikan status aktif dan menghapus alasan penangguhan.
+- **Aksi massal** suspend/reactivate/ubah role hingga 100 akun, dengan laporan jumlah terproses dan daftar akun yang dilewati beserta alasannya.
+- **Guards keamanan akun**: admin tidak dapat menangguhkan akunnya sendiri, admin aktif terakhir tidak dapat ditangguhkan, role/hapus akun dalam keadaan tertentu ditolak (detail di bagian [Keamanan](#keamanan-dan-isolasi-data)).
+- **Export CSV** daftar pengguna dan audit log mengikuti filter yang aktif.
+- **Audit log** tindakan admin (perubahan role, reset password, penangguhan, reaktivasi, penghapusan akun) dengan filter tanggal/aksi/pencarian, tautan ke akun terkait, dan export CSV. Password sementara tidak pernah dicatat di audit log.
+- **Reset password sementara**: password baru dihasilkan random (hanya tampil sekali di UI) dan sesi remember-me lama dicabut.
 
 ### Manajemen Catatan
 
@@ -132,7 +153,7 @@ TataKelas mengelompokkan bahan belajar ke dalam folder, misalnya `Laravel Develo
 | **Guest** | Hanya dapat membuka halaman login dan registrasi. |
 | **Student** | Mengelola workspace sendiri, bergabung ke classroom, melihat materi kelas, dan mengumpulkan tugas. |
 | **Teacher** | Semua akses workspace pribadi, membuat classroom, membagikan materi/tugas, melihat submission kelas, dan memberi nilai. |
-| **Admin** | Dapat menjalankan fungsi pengajaran pada classroom yang dibuatnya. Tidak otomatis dapat melihat workspace privat pengguna lain. |
+| **Admin** | Fungsi pengajaran pada classroom yang dibuatnya (materi, tugas, penilaian, co-teaching) **dan** manajemen akun lintas sistem melalui panel `/admin`: ubah role, reset password, suspend/reactivate, aksi massal, export CSV, dan audit log. Tidak otomatis dapat melihat workspace privat pengguna lain. |
 
 TataKelas menganut prinsip **least privilege**: konten personal hanya dapat diakses pemilik, sedangkan folder LMS hanya tersedia untuk pengajar classroom dan murid yang terdaftar. Matriks akses tersedia di [`docs/PRD.md`](docs/PRD.md#7-role-dan-hak-akses).
 
@@ -166,13 +187,14 @@ Antarmuka memakai **DaisyUI 5** di atas Tailwind CSS 4 dengan dua tema bawaan ya
 
 TataKelas menggunakan pola MVC Laravel:
 
-- **Route** di `routes/web.php` membagi akses menjadi `guest` dan `auth`.
+- **Route** di `routes/web.php` membagi akses menjadi `guest` dan `auth`; grup `auth` dilindungi middleware `active` dan akses admin dijaga middleware `role:admin`.
 - **Controller** menangani alur CRUD dan mengembalikan view atau redirect.
 - **Form Request** menangani validasi dan pesan error.
 - **Model Eloquent** menyimpan relasi dan aturan kepemilikan data.
 - **Global Scope** pada `Folder`, `Resource`, `Note`, dan `Photo` membatasi query ke data milik pengguna yang sedang login.
+- **Policy** mengatur akses folder classroom dan submission sesuai role (pemilik, co-teacher, anggota kelas).
 - **Blade View** menyusun antarmuka dengan layout utama `layouts.app`.
-- **Storage** menyimpan file foto secara privat dan menyajikannya melalui controller.
+- **Storage** menyimpan file foto, materi classroom, dan submission secara privat dan menyajikannya melalui controller.
 
 Alur kepemilikan data:
 
@@ -192,20 +214,34 @@ TataKelas/
 │   ├── Http/
 │   │   ├── Controllers/
 │   │   │   ├── AuthController.php
+│   │   │   ├── PasswordController.php
 │   │   │   ├── FolderController.php
 │   │   │   ├── NoteController.php
 │   │   │   ├── PhotoController.php
-│   │   │   └── ResourceController.php
+│   │   │   ├── ResourceController.php
+│   │   │   ├── ClassroomController.php
+│   │   │   ├── SubmissionController.php
+│   │   │   ├── AdminDashboardController.php
+│   │   │   ├── AdminUserController.php
+│   │   │   ├── AdminAuditLogController.php
+│   │   │   └── Controller.php
+│   │   ├── Middleware/
+│   │   │   ├── EnsureUserHasRole.php      # alias `role:...`
+│   │   │   └── EnsureAccountIsActive.php  # alias `active`, auto-logout akun ditangguhkan
 │   │   └── Requests/            # Validasi form
 │   └── Models/
+│       ├── AdminAuditLog.php
+│       ├── Classroom.php
 │       ├── Folder.php
 │       ├── Note.php
 │       ├── Photo.php
 │       ├── Resource.php
+│       ├── Submission.php
+│       ├── SubmissionFile.php
 │       └── User.php
 ├── database/
-│   ├── migrations/              # Skema users, folders, resources, notes, photos
-│   ├── seeders/                 # Data contoh
+│   ├── migrations/              # Skema users, folders, resources, notes, photos, classrooms, submissions, admin_audit_logs, dll.
+│   ├── seeders/                 # Data contoh (DemoSeeder + seeder per fitur)
 │   └── database.sqlite          # Database SQLite opsional
 ├── docs/
 │   └── PRD.md                   # Product Requirements Document
@@ -213,20 +249,23 @@ TataKelas/
 │   ├── css/
 │   │   └── app.css              # Tailwind + konfigurasi tema DaisyUI
 │   └── views/
+│       ├── admin/               # Dashboard, direktori/detail pengguna, audit log
 │       ├── auth/                # Login dan registrasi
+│       ├── classrooms/          # Daftar, detail classroom, detail materi/tugas
 │       ├── folders/             # Dashboard dan CRUD folder
 │       ├── layouts/             # Layout utama dan layout autentikasi
 │       ├── notes/               # Form catatan
 │       ├── partials/            # Flash message
 │       ├── photos/              # Form foto
-│       ├── resources/           # Daftar dan form resource
+│       ├── resources/           # Daftar, form, dan detail resource
+│       ├── submissions/         # Hasil penilaian
 │       └── vendor/pagination/   # Pagination kustom DaisyUI
 ├── routes/
 │   └── web.php
 ├── storage/
-│   └── app/private/photos/      # Foto privat hasil upload baru
+│   └── app/private/             # File privat: foto, materi classroom, submission
 ├── tests/
-│   └── Feature/OwnershipTest.php
+│   └── Feature/                 # Autentikasi, kepemilikan, classroom, admin, export, preview
 ├── .env.example
 └── README.md
 ```
@@ -541,10 +580,57 @@ Semua route aplikasi berada di `routes/web.php`.
 
 ### Route terautentikasi
 
+Grup route di bawah dilindungi middleware `auth` dan `active` (akun ditangguhkan langsung diarahkan ke halaman login).
+
+#### Akun
+
 | Method | URI | Nama | Fungsi |
 | --- | --- | --- | --- |
 | POST | `/logout` | `logout` | Logout |
-| GET | `/` | - | Redirect ke dashboard |
+| GET/PUT | `/account/password` | `account.password.edit`, `account.password.update` | Ganti kata sandi dengan verifikasi |
+| GET | `/` | - | Redirect admin ke dashboard admin, role lain ke dashboard folder |
+
+#### Admin — panel administrasi (`role:admin`, prefix `/admin`)
+
+| Method | URI | Nama | Fungsi |
+| --- | --- | --- | --- |
+| GET | `/admin` | `admin.index` | Dashboard admin (ringkasan akun, classroom, aktivitas admin) |
+| GET | `/admin/users` | `admin.users.index` | Direktori pengguna dengan pencarian, filter, sorting, pagination |
+| GET | `/admin/users/export` | `admin.users.export` | Export CSV daftar pengguna mengikuti filter |
+| PATCH | `/admin/users/bulk` | `admin.users.bulk` | Aksi massal suspend/reactivate/ubah role |
+| GET | `/admin/users/{user}` | `admin.users.show` | Detail pengguna dan riwayat auditnya |
+| PATCH | `/admin/users/{user}/role` | `admin.users.role` | Ubah role pengguna |
+| POST | `/admin/users/{user}/reset-password` | `admin.users.reset-password` | Buat password sementara |
+| PATCH | `/admin/users/{user}/suspend` | `admin.users.suspend` | Tangguhkan akun (blokir login + auto-logout) |
+| PATCH | `/admin/users/{user}/reactivate` | `admin.users.reactivate` | Aktifkan kembali akun |
+| DELETE | `/admin/users/{user}` | `admin.users.destroy` | Hapus akun (dengan guard data terkait) |
+| GET | `/admin/audit-logs` | `admin.audit-logs.index` | Audit log tindakan admin dengan filter tanggal/aksi/search |
+| GET | `/admin/audit-logs/export` | `admin.audit-logs.export` | Export CSV audit log mengikuti filter |
+
+#### Classroom dan LMS
+
+| Method | URI | Nama | Fungsi |
+| --- | --- | --- | --- |
+| GET/POST | `/classrooms/join` | `classrooms.join` | Student bergabung dengan kode; teacher/admin bergabung sebagai co-teacher |
+| GET | `/classrooms` | `classrooms.index` | Daftar classroom |
+| GET | `/classrooms/{classroom}` | `classrooms.show` | Materi, tugas, co-teacher, dan peserta classroom |
+| GET | `/classrooms/{classroom}/folders/{folder}` | `classrooms.folders.show` | Detail materi/tugas classroom |
+| POST | `/classrooms` | `classrooms.store` | Teacher/Admin membuat classroom |
+| POST | `/classrooms/{classroom}/folders` | `classrooms.folders.store` | Buat folder materi/tugas |
+| DELETE | `/classrooms/{classroom}/co-teachers/{coTeacher}` | `classrooms.co-teachers.destroy` | Pemilik mengeluarkan co-teacher |
+| DELETE | `/classrooms/{classroom}/co-teacher` | `classrooms.co-teacher.leave` | Co-teacher keluar sendiri |
+| POST | `/classrooms/{classroom}/folders/{folder}/resources` | `classrooms.folders.resources.store` | Tambah tautan/berkas materi |
+| POST | `/folders/{folder}/submissions` | `folders.submissions.store` | Student mengumpulkan tugas (teks/URL/berkas) |
+| DELETE | `/folders/{folder}/submissions` | `folders.submissions.destroy` | Student menarik submission |
+| PATCH | `/submissions/{submission}/grade` | `submissions.grade` | Teacher/Admin memberi nilai dan feedback |
+| GET | `/resources/{resource}/file` | `resources.file` | Unduh resource setelah otorisasi |
+| GET | `/resources/{resource}/preview` | `resources.preview` | Pratinjau PDF materi inline di browser |
+| GET | `/submission-files/{file}` | `submissions.files.download` | Unduh berkas submission setelah otorisasi |
+
+#### Workspace pribadi (`role:teacher,student`)
+
+| Method | URI | Nama | Fungsi |
+| --- | --- | --- | --- |
 | GET/POST | `/folders` | `folders.index`, `folders.store` | Daftar dan tambah folder |
 | GET | `/folders/create` | `folders.create` | Form folder |
 | GET | `/folders/{folder}` | `folders.show` | Detail folder |
@@ -564,17 +650,6 @@ Semua route aplikasi berada di `routes/web.php`.
 | GET | `/photos/create` | `photos.create` | Form upload foto |
 | GET | `/photos/{photo}` | `photos.show` | Detail foto |
 | GET/PUT/DELETE | `/photos/{photo}/edit`, `/photos/{photo}` | `photos.edit`, `photos.update`, `photos.destroy` | Ubah/hapus foto |
-| GET | `/classrooms` | `classrooms.index` | Daftar classroom |
-| POST | `/classrooms` | `classrooms.store` | Teacher/Admin membuat classroom |
-| POST | `/classrooms/join` | `classrooms.join` | Student bergabung dengan kode |
-| GET | `/classrooms/{classroom}` | `classrooms.show` | Materi, tugas, dan peserta classroom |
-| POST | `/classrooms/{classroom}/folders` | `classrooms.folders.store` | Buat folder materi/tugas |
-| GET | `/classrooms/{classroom}/folders/{folder}` | `classrooms.folders.show` | Detail materi/tugas |
-| POST | `/classrooms/{classroom}/folders/{folder}/resources` | `classrooms.folders.resources.store` | Tambah tautan/berkas materi |
-| POST | `/folders/{folder}/submissions` | `folders.submissions.store` | Student mengumpulkan tugas |
-| PATCH | `/submissions/{submission}/grade` | `submissions.grade` | Teacher/Admin memberi nilai dan feedback |
-| GET | `/resources/{resource}/file` | `resources.file` | Unduh resource setelah otorisasi |
-| GET | `/submissions/{submission}/file` | `submissions.file` | Unduh submission setelah otorisasi |
 
 
 
@@ -588,8 +663,12 @@ Semua route aplikasi berada di `routes/web.php`.
 | `name` | string | Nama pengguna |
 | `email` | string | Unik |
 | `password` | string | Hash password |
-| `role` | enum | `admin`, `teacher`, `student`; registrasi publik selalu `student` |
-| `remember_token` | string | Token remember me |
+| `role` | string | `admin`, `teacher`, `student`; registrasi publik selalu `student` |
+| `status` | string | `active` (default) atau `suspended`; berindeks |
+| `suspended_at` | timestamp nullable | Waktu akun ditangguhkan |
+| `suspension_reason` | text nullable | Alasan penangguhan, diisi admin |
+| `last_login_at` | timestamp nullable | Waktu login terakhir, diisi saat login berhasil; berindeks |
+| `remember_token` | string | Token remember me; dirotasi saat suspend/reset password |
 | `created_at`, `updated_at` | timestamp | Waktu dibuat/diubah |
 
 ### `folders`
@@ -620,20 +699,29 @@ Semua route aplikasi berada di `routes/web.php`.
 | `read_status` | enum | `to_read`, `reading`, `completed` |
 | `created_at`, `updated_at` | timestamp | Waktu dibuat/diubah |
 
-### `classrooms` dan `classroom_user`
+### `classrooms`, `classroom_user`, dan `classroom_co_teacher`
 
-Classroom dimiliki oleh `teacher_id`; student terdaftar melalui tabel pivot `classroom_user`. Kode classroom bersifat unik untuk proses bergabung.
+Classroom dimiliki oleh `teacher_id`. Student terdaftar melalui tabel pivot `classroom_user`; pengajar pengikut (co-teacher) melalui tabel pivot `classroom_co_teacher`. Kode classroom bersifat unik untuk proses bergabung (murid bergabung, guru lain bergabung sebagai co-teacher). Hanya pemilik classroom yang dapat mengeluarkan co-teacher; co-teacher dapat keluar sendiri.
 
-### `submissions`
+### `submissions` dan `submission_files`
 
-Submission terkait folder tugas dan student. Satu student memiliki satu submission per tugas yang dapat diperbarui; status mencakup `submitted`, `late`, dan `graded`.
+Submission terkait folder tugas dan student. Satu student memiliki satu submission per tugas yang dapat diperbarui atau ditarik; status mencakup `submitted`, `late`, dan `graded`.
 
 | Kolom | Keterangan |
 | --- | --- |
-| `submission_text`, `file_path`, `submitted_url` | Isi submission (minimal salah satu) |
+| `submission_text`, `submitted_url` | Isi submission (minimal salah satu; berkas juga diperbolehkan) |
 | `grade` | Nilai integer 0–100 |
 | `teacher_feedback` | Feedback opsional |
 | `status` | `submitted`, `late`, atau `graded` |
+
+Berkas submission disimpan terpisah di tabel `submission_files` sehingga satu submission dapat memuat beberapa berkas:
+
+| Kolom | Keterangan |
+| --- | --- |
+| `submission_id` | Foreign key ke submission, cascade delete |
+| `file_path` | Path berkas di disk privat |
+| `original_name` | Nama asli berkas saat diunggah |
+| `size` | Ukuran berkas dalam byte (nullable) |
 
 ### `notes`
 
@@ -658,7 +746,22 @@ Submission terkait folder tugas dan student. Satu student memiliki satu submissi
 | `mime_type` | string nullable | MIME type |
 | `file_size` | bigint nullable | Ukuran file dalam byte |
 | `description` | text nullable | Deskripsi |
-| `created_at`, `updated_at` | timestamp | Waktu dibuat/diubah |
+| `created_at`, `updated_at` | timestamps | Waktu dibuat/diubah |
+
+### `admin_audit_logs`
+
+Catatan tindakan administratif admin. Snapshot nama/email aktor dan target disimpan agar riwayat tetap terbaca meski akun dihapus (foreign key `nullOnDelete`).
+
+| Kolom | Tipe | Keterangan |
+| --- | --- | --- |
+| `id` | bigint | Primary key |
+| `actor_user_id` | bigint nullable | Admin yang bertindak; `null` bila akun dihapus |
+| `actor_name`, `actor_email` | string | Snapshot identitas aktor |
+| `target_user_id` | bigint nullable | Akun yang menjadi objek tindakan |
+| `target_name`, `target_email` | string nullable | Snapshot identitas target |
+| `action` | string | `role_changed`, `password_reset`, `account_deleted`, `account_suspended`, `account_reactivated` |
+| `details` | json nullable | Detail tindakan; tidak pernah memuat password |
+| `created_at`, `updated_at` | timestamps | Waktu; berindeks komposit `(action, created_at)` dan `(target_user_id, created_at)` |
 
 ## Aturan Validasi
 
@@ -698,14 +801,18 @@ TataKelas menerapkan beberapa lapisan perlindungan:
 
 1. **Middleware `auth`** melindungi seluruh route aplikasi. Pengguna yang belum login diarahkan ke halaman login.
 2. **Middleware `guest`** mencegah pengguna yang sudah login membuka halaman login/registrasi.
-3. **Global scope dan policies** membatasi folder privat pada pemiliknya dan classroom pada teacher pemilik serta student terdaftar. Admin tidak mendapat akses tambahan ke folder privat murid.
-4. **Validasi foreign key** membatasi operasi personal ke folder privat milik pengguna; resource LMS hanya dapat dikelola teacher/admin classroom.
-5. **File privat** (foto, materi, submission) disimpan di disk local dan dilayani lewat route yang memeriksa policy, bukan melalui URL public.
-6. **CSRF token** pada semua form POST/PUT/PATCH/DELETE.
-7. **Password hashing** otomatis melalui cast `hashed` pada model `User`.
-8. **Rate limiting** login dan registrasi untuk mengurangi brute force.
-9. **Session regeneration** saat login dan registrasi; invalidasi session saat logout.
-10. **Transaksi database** saat registrasi dan pengklaiman folder lama.
+3. **Middleware `active`** pada seluruh route terautentikasi mengakhiri sesi akun yang ditangguhkan: user di-logout, session di-invalidate, dan CSRF token diregenerasi.
+4. **Middleware `role:admin`** dan `role:teacher,admin`, `role:student`, dll. memisahkan akses per role; panel admin hanya untuk admin.
+5. **Global scope dan policies** membatasi folder privat pada pemiliknya dan classroom pada teacher pemilik serta student terdaftar. Admin tidak mendapat akses tambahan ke folder privat murid.
+6. **Validasi foreign key** membatasi operasi personal ke folder privat milik pengguna; resource LMS hanya dapat dikelola teacher/admin classroom.
+7. **File privat** (foto, materi, submission) disimpan di disk local dan dilayani lewat route yang memeriksa policy, bukan melalui URL public.
+8. **CSRF token** pada semua form POST/PUT/PATCH/DELETE.
+9. **Password hashing** otomatis melalui cast `hashed` pada model `User`.
+10. **Rate limiting** login dan registrasi untuk mengurangi brute force.
+11. **Session regeneration** saat login dan registrasi; invalidasi session saat logout.
+12. **Transaksi database** saat registrasi, pengklaiman folder lama, dan seluruh aksi administrasi admin (dengan `lockForUpdate`).
+13. **Anti-akun-kunci diri**: admin tidak dapat menangguhkan/menghapus/mengubah role akunnya sendiri, admin aktif terakhir tidak dapat ditangguhkan/dihapus/diturunkan rolenya, dan mengubah role menjadi `student` ditolak selama akun masih mengelola atau mengajar classroom.
+14. **Audit log admin**: setiap tindakan administrasi dicatat dengan snapshot identitas; password sementara tidak pernah dicatat di log.
 
 ### Klaim Folder Lama
 
@@ -733,48 +840,33 @@ Atau:
 vendor/bin/phpunit
 ```
 
-Test yang tersedia:
+Test yang tersedia (70 test / 380 assertion):
 
-- `tests/Feature/ExampleTest.php`
-  - Guest diarahkan ke halaman login.
-  - Guest dapat membuka halaman login dan registrasi.
-- `tests/Feature/OwnershipTest.php`
-  - Pengguna pertama mengklaim folder lama.
-  - Pengguna tidak dapat melihat folder/resource milik pengguna lain.
-  - Resource tidak dapat dibuat di folder milik pengguna lain.
+- `tests/Feature/ExampleTest.php` — halaman welcome, redirect dashboard, halaman auth.
+- `tests/Feature/OwnershipTest.php` — klaim folder lama, isolasi folder/resource antar pengguna.
+- `tests/Feature/PasswordUpdateTest.php` — ganti kata sandi dengan verifikasi kata sandi saat ini.
+- `tests/Feature/LoginSessionTest.php` — cookie sesi vs remember me, default landing admin.
+- `tests/Feature/ClassroomVisibilityTest.php` — visibilitas folder privat/kelas, submission dan grading, visibilitas resource.
+- `tests/Feature/CoTeacherTest.php` — co-teacher join/keluar/dikeluarkan dan batas otorisasinya.
+- `tests/Feature/SubmissionTest.php` — multi-file submission, replace attachment, tarik submission.
+- `tests/Feature/ResourcePreviewTest.php` — preview PDF inline, penolakan untuk non-PDF, otorisasi preview.
+- `tests/Feature/ResourceManagementTest.php` — edit resource berkas tanpa re-upload.
+- `tests/Feature/TataKelasDemoSeederTest.php` — idempotensi dan batasan seeder demo.
+- `tests/Feature/AdminAccountManagementTest.php` — direktori admin, ubah role, guard self/last-admin/co-teacher, reset password, hapus akun, audit log.
+- `tests/Feature/AdminUserStatusTest.php` — suspend/reactivate, login ditolak, auto-logout sesi, guard akun sendiri, bulk action.
+- `tests/Feature/AdminUserDetailTest.php` — halaman detail pengguna, classroom dan jumlah data, riwayat audit, pencatatan login terakhir.
+- `tests/Feature/AdminExportsTest.php` — CSV export pengguna dan audit log mengikuti filter.
+- `tests/Feature/AdminDashboardTest.php` — dashboard admin dan pembatasan aksesnya.
+- `tests/Feature/AdminAuditLogFilterTest.php` — filter audit log tanggal/aksi dan label detail.
 
-Konfigurasi `phpunit.xml` memakai SQLite in-memory:
+Konfigurasi `phpunit.xml` default memakai SQLite in-memory. Karena environment pengembangan tidak memuat `pdo_sqlite`, suite diverifikasi memakai database MySQL test terpisah:
 
-```xml
-<env name="DB_CONNECTION" value="sqlite"/>
-<env name="DB_DATABASE" value=":memory:"/>
+```powershell
+$env:DB_CONNECTION='mysql'; $env:DB_DATABASE='folderin_test'; $env:DB_USERNAME='root'; $env:DB_PASSWORD='';
+php artisan test
 ```
 
-Jika ekstensi `pdo_sqlite` belum aktif, test akan gagal dengan pesan `could not find driver`. Solusi:
-
-1. Aktifkan `extension=pdo_sqlite` di `php.ini`, lalu restart terminal; atau
-2. Jika DLL SQLite tersedia di instalasi PHP, jalankan PHPUnit dengan ekstensi aktif hanya untuk proses tersebut:
-
-   ```powershell
-   php -d extension=pdo_sqlite -d extension=sqlite3 vendor\phpunit\phpunit\phpunit
-   ```
-
-   Jalankan PHPUnit langsung seperti di atas; `php artisan test` memulai proses PHP terpisah dan tidak meneruskan opsi `-d`; atau
-3. Ubah konfigurasi database test di `phpunit.xml` ke MySQL dan sediakan database test terpisah.
-
-Contoh alternatif MySQL tanpa mengubah `phpunit.xml`:
-
-1. Salin `phpunit.xml` menjadi `phpunit.mysql.xml`.
-2. Ubah `DB_CONNECTION` menjadi `mysql`, lalu isi `DB_DATABASE` dengan database test terpisah (misalnya `folderin_testing`), beserta host, username, dan password.
-3. Buat database test tersebut, lalu jalankan:
-
-```bash
-vendor/bin/phpunit -c phpunit.mysql.xml
-```
-
-4. Hapus database test setelah selesai.
-
-Verifikasi terakhir: **11 test / 46 assertion** lulus menggunakan SQLite in-memory.
+Verifikasi terakhir: **70 test / 380 assertion** lulus memakai MySQL test database. Untuk CI, gunakan jalur ini atau aktifkan `pdo_sqlite`.
 
 ## Troubleshooting
 
@@ -852,69 +944,76 @@ Pastikan `daisyui` terpasang sebagai dev dependency. Jika build belum tersedia, 
 
 | Modul | Status |
 | --- | --- |
-| Registrasi, login, logout | Selesai |
+| Registrasi, login, logout, remember me | Selesai |
 | Rate limiting autentikasi | Selesai |
 | Dashboard folder | Selesai |
 | CRUD folder | Selesai |
 | CRUD resource | Selesai, termasuk halaman detail |
+| Conditional upload field resource/materi | Selesai |
+| Pratinjau PDF materi inline | Selesai |
 | Ubah status baca resource | Selesai |
 | Pindah resource antar folder | Selesai |
 | Pencarian dan filter resource | Selesai |
 | CRUD catatan | Selesai, termasuk halaman daftar dan detail |
 | CRUD foto | Selesai, termasuk halaman daftar dan detail |
 | Penyajian foto privat | Selesai |
+| Classroom: materi, tugas, submission, penilaian | Selesai |
+| Co-teacher bergabung/keluar/dikeluarkan | Selesai |
+| Submission multi-berkas | Selesai |
 | Ganti kata sandi | Selesai, dengan verifikasi kata sandi saat ini |
 | Pembersihan file foto saat folder dihapus | Selesai |
 | Isolasi data per pengguna | Selesai |
+| Dashboard admin dan detail pengguna | Selesai |
+| Suspend/reactivate + auto-logout sesi | Selesai |
+| Aksi massal dengan laporan terproses/dilewati | Selesai |
+| Export CSV pengguna dan audit log | Selesai |
+| Audit log tindakan admin | Selesai |
 | Dark mode dan responsivitas | Selesai |
 | Optimasi query, pagination, dan indeks database | Selesai |
 | Build asset Tailwind + DaisyUI via Vite | Selesai |
-| Test kepemilikan data | Tersedia |
+| Test suite (70 test / 380 assertion) | Tersedia |
 
-### Belum lengkap
+### Keterbatasan
 
-1. **Belum ada panel admin sistem**
-   - Peran aplikasi: **Student**, **Teacher**, dan **Admin**; admin dapat mengajar classroom yang dibuatnya.
-   - Belum ada panel admin sistem untuk manajemen pengguna lintas classroom atau moderasi konten.
-
-2. **Fitur akun lanjutan belum lengkap**
+1. **Autentikasi lanjutan belum tersedia**
    - Verifikasi email.
-   - Lupa/reset password.
+   - Lupa/reset password mandiri.
    - Ubah profil.
-   - Hapus akun.
+   - Hapus akun mandiri.
    - Two-factor authentication.
 
-3. **Ketergantungan CDN untuk ikon**
+2. **Ketergantungan CDN untuk ikon**
    - Tailwind CSS dan DaisyUI sudah dikompilasi melalui Vite.
    - Font Awesome masih dimuat dari CDN sehingga ikon membutuhkan koneksi internet.
 
-4. **Pencarian sederhana**
+3. **Pencarian sederhana**
    - Pencarian memakai `LIKE`, belum memakai full-text search.
    - Performa dapat menurun pada data yang sangat besar.
 
-5. **Belum ada API**
+4. **Belum ada API**
    - Aplikasi hanya menyediakan antarmuka web berbasis Blade.
 
-6. **Belum ada audit log**
-   - Perubahan data tidak dicatat dalam log aktivitas pengguna.
+5. **Audit log terbatas pada tindakan admin**
+   - Aktivitas umum pengguna (misalnya login, pengubahan data) belum dicatat; audit saat ini hanya mencakup tindakan administrasi akun.
 
-7. **Test belum mencakup seluruh modul**
-   - Test yang ada mencakup autentikasi, perubahan kata sandi, kepemilikan data, dan beberapa skenario classroom/submission.
-   - Belum ada test CRUD dan test akses file yang lengkap untuk seluruh modul.
+6. **Penangguhan akun belum ada notifikasi**
+   - Akun ditangguhkan tanpa notifikasi email; pengguna baru mengetahui statusnya saat mencoba login.
 
-8. **Konfigurasi test dan environment berbeda**
-   - `.env` pengembangan memakai MySQL, sedangkan `phpunit.xml` memakai SQLite in-memory.
-   - Lingkungan pengembangan saat ini belum memuat ekstensi `pdo_sqlite` secara default; suite dapat dijalankan dengan memuat DLL SQLite hanya untuk proses PHPUnit.
-   - Suite sudah diverifikasi lulus memakai database MySQL terpisah. Aktifkan `pdo_sqlite` atau gunakan konfigurasi MySQL test untuk CI.
+7. **Test environment perlu ekstensi atau MySQL**
+   - `phpunit.xml` default memakai SQLite in-memory, sedangkan environment pengembangan belum memuat `pdo_sqlite`.
+   - Suite diverifikasi memakai database MySQL test terpisah; CI perlu salah satu dari kedua jalur tersebut.
+
+8. **Tidak ada backup dan monitoring otomatis**
+   - Backup database/storage dan pembersihan file orphan lama masih manual.
 
 ## Roadmap
 
 ### Fase 1 — Stabilisasi LMS
 
-- Menambahkan test CRUD serta test akses file personal, materi kelas, dan submission.
 - Menambahkan smoke test untuk seluruh route yang memakai view.
 - Menambahkan pembersihan file orphan secara terjadwal untuk data lama.
 - Menata test agar dapat memakai MySQL test database tanpa mengganggu data pengembangan.
+- Integrasi CI untuk menjalankan suite (MySQL test database atau `pdo_sqlite`).
 
 ### Fase 2 — Peningkatan Produk
 
@@ -925,17 +1024,18 @@ Pastikan `daisyui` terpasang sebagai dev dependency. Jika build belum tersedia, 
 - Statistik keterbacaan yang lebih lengkap.
 - Reset password dan verifikasi email.
 - Halaman profil dan hapus akun.
+- Notifikasi status akun (misalnya penangguhan) melalui email.
 - PWA/mobile-friendly enhancement.
 
 ### Fase 3 — Skala dan Kolaborasi
 
-- Panel admin sistem untuk mengelola akun lintas classroom.
 - Berbagi folder dengan tautan atau kolaborator.
-- Komentar dan activity log.
+- Komentar dan activity log pengguna umum.
 - Penyimpanan object storage (S3-compatible).
 - Full-text search.
+- Audit log aktivitas umum dan backup otomatis.
+- Two-factor authentication dan manajemen sesi aktif per pengguna.
 - API publik.
-- Audit log dan backup otomatis.
 
 ## Lisensi
 

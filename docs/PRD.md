@@ -6,9 +6,9 @@
 | --- | --- |
 | Nama produk | TataKelas |
 | Jenis produk | Workspace belajar pribadi murid dan sistem pembelajaran berbasis classroom |
-| Versi dokumen | 1.0 |
+| Versi dokumen | 1.1 |
 | Status | Draft / Hybrid LMS |
-| Tanggal | 4 November 2026 |
+| Tanggal | 9 November 2026 |
 | Platform | Web (desktop dan mobile browser) |
 | Teknologi | Laravel 12, Blade, MySQL/SQLite, Tailwind CSS |
 | Pemilik produk | Tim TataKelas |
@@ -55,6 +55,8 @@ Produk berfokus pada:
 - Role student, teacher, dan admin (admin juga dapat mengajar).
 - Classroom dengan kode gabung, folder materi, tugas bertenggat, submission, dan penilaian.
 - Pemisahan ketat antara folder privat dan konten classroom.
+- Materi PDF yang dapat dipratinjau inline dan submission multi-berkas.
+- Panel admin untuk manajemen akun lintas sistem: ubah role, suspend/reactivate, aksi massal, export CSV, reset password, dan audit log tindakan admin.
 
 ---
 
@@ -192,19 +194,29 @@ Prioritas memakai MoSCoW: **M** = Must have, **S** = Should have, **C** = Could 
 | FR-29 | Pengguna dapat mengelola profil | C | Belum |
 | FR-30 | Pengguna dapat mereset password melalui email | C | Belum |
 | FR-31 | Admin dapat mengelola pengguna lintas sistem | C | Selesai |
-| FR-32 | Registrasi publik membuat akun dengan role student | M | Dalam implementasi |
-| FR-33 | Teacher/Admin dapat membuat classroom dengan kode gabung | M | Dalam implementasi |
-| FR-34 | Student dapat bergabung ke classroom melalui kode | M | Dalam implementasi |
-| FR-35 | Teacher/Admin dapat membagikan folder materi dan tugas bertenggat | M | Dalam implementasi |
-| FR-36 | Student dapat mengumpulkan teks, URL, atau file; submission terlambat diberi status `late` | M | Dalam implementasi |
-| FR-37 | Teacher/Admin pemilik atau co-teacher classroom dapat memberi nilai 0–100 dan feedback | M | Dalam implementasi |
-| FR-38 | Folder privat student tidak dapat dilihat oleh Teacher, Admin, atau student lain | M | Dalam implementasi |
-| FR-39 | Berkas materi/submission hanya dapat diunduh oleh pengguna yang berhak | M | Dalam implementasi |
+| FR-32 | Registrasi publik membuat akun dengan role student | M | Selesai |
+| FR-33 | Teacher/Admin dapat membuat classroom dengan kode gabung | M | Selesai |
+| FR-34 | Student dapat bergabung ke classroom melalui kode | M | Selesai |
+| FR-35 | Teacher/Admin dapat membagikan folder materi dan tugas bertenggat | M | Selesai |
+| FR-36 | Student dapat mengumpulkan teks, URL, atau file; submission terlambat diberi status `late` | M | Selesai |
+| FR-37 | Teacher/Admin pemilik atau co-teacher classroom dapat memberi nilai 0–100 dan feedback | M | Selesai |
+| FR-38 | Folder privat student tidak dapat dilihat oleh Teacher, Admin, atau student lain | M | Selesai |
+| FR-39 | Berkas materi/submission hanya dapat diunduh oleh pengguna yang berhak | M | Selesai |
 | FR-40 | Pengguna dapat mengganti kata sandi dengan verifikasi kata sandi saat ini | S | Selesai |
 | FR-41 | Login tanpa opsi remember me memakai cookie sesi yang berakhir saat browser ditutup | S | Selesai |
 | FR-42 | Admin mengelola akun lintas sistem dan melihat audit tindakan akun | C | Selesai |
-| FR-43 | Teacher/Admin dapat bergabung ke classroom guru lain sebagai co-teacher melalui kode kelas | M | Dalam implementasi |
-| FR-44 | Pemilik classroom dapat mengeluarkan co-teacher; co-teacher dapat keluar sendiri | M | Dalam implementasi |
+| FR-43 | Teacher/Admin dapat bergabung ke classroom guru lain sebagai co-teacher melalui kode kelas | M | Selesai |
+| FR-44 | Pemilik classroom dapat mengeluarkan co-teacher; co-teacher dapat keluar sendiri | M | Selesai |
+| FR-45 | Student dapat mengumpulkan beberapa berkas dalam satu submission | M | Selesai |
+| FR-46 | Materi berkas PDF dapat dipratinjau inline di browser oleh pengguna berhak | S | Selesai |
+| FR-47 | Field upload berkas hanya tampil ketika jenis resource adalah berkas (PDF/dokumen) | S | Selesai |
+| FR-48 | Admin dapat menangguhkan dan mengaktifkan kembali akun dengan alasan | S | Selesai |
+| FR-49 | Akun ditangguhkan tidak dapat login; sesi aktifnya diakhiri pada request berikutnya | S | Selesai |
+| FR-50 | Admin dapat menjalankan aksi massal suspend/reactivate/role dengan laporan terproses dan daftar akun yang dilewati | C | Selesai |
+| FR-51 | Admin dapat mengekspor daftar pengguna dan audit log ke CSV mengikuti filter aktif | C | Selesai |
+| FR-52 | Admin melihat dashboard ringkasan akun, classroom, resource, dan aktivitas admin | C | Selesai |
+| FR-53 | Detail pengguna menampilkan classroom, jumlah data terkait, login terakhir, status, dan riwayat audit akun | C | Selesai |
+| FR-54 | Admin dapat mencari dan memfilter audit log berdasarkan tanggal dan jenis tindakan | C | Selesai |
 
 ### 4.4 Kebutuhan Non-Fungsional
 
@@ -283,8 +295,12 @@ Prioritas memakai MoSCoW: **M** = Must have, **S** = Should have, **C** = Could 
 - Submission tugas berupa teks, tautan, atau berkas.
 - Penilaian 0–100 dan feedback oleh teacher/admin pemilik atau co-teacher classroom.
 - Penerimaan submission terlambat dengan penanda `late`.
+- Submission dengan beberapa berkas; pengumpulan teks, URL, atau berkas.
+- Pratinjau materi PDF inline di browser tanpa mengunduh.
+- Field upload berkas yang hanya tampil ketika jenis resource adalah berkas.
 - Otorisasi berbasis role dan policy untuk folder serta submission.
-- Panel admin untuk mencari akun, mengubah role, membuat password sementara, dan melihat audit log tindakan akun.
+- Panel admin untuk mencari akun, mengubah role, membuat password sementara, menangguhkan/mengaktifkan kembali akun, aksi massal, dashboard ringkasan, detail pengguna, export CSV, dan melihat/memfilter audit log tindakan akun.
+- Akun ditangguhkan tidak dapat login dan sesi aktifnya diakhiri otomatis.
 - Penghapusan akun ditolak selama masih ada data folder, classroom, keanggotaan co-teacher/student, atau submission terkait.
 - Dark mode dan tampilan responsif.
 - Validasi form dan flash message.
@@ -553,7 +569,7 @@ Item berikut tidak termasuk lingkup saat ini:
 | **Guest** | Pengunjung yang belum login. Hanya dapat membuka halaman login dan registrasi. | Aktif |
 | **Student** | Mengelola workspace privat, bergabung ke classroom, melihat materi, dan mengumpulkan tugas. | Aktif |
 | **Teacher** | Mengelola workspace privat dan classroom miliknya, bergabung sebagai co-teacher ke classroom guru lain, membagikan materi/tugas, serta menilai submission murid. | Aktif |
-| **Admin** | Dapat membuat dan mengajar classroom seperti Teacher, termasuk bergabung sebagai co-teacher, tetapi tidak otomatis dapat melihat workspace privat pengguna lain. | Aktif |
+| **Admin** | Fungsi pengajaran seperti Teacher pada classroom miliknya (termasuk co-teacher), ditambah fungsionalitas pengguna aktif di panel admin (ubah role, suspend/reactivate, aksi massal, reset password, hapus akun dengan guard, export CSV, audit log). Tidak otomatis dapat melihat workspace privat pengguna lain. | Aktif |
 | **System** | Proses internal aplikasi: global scope, validasi, penyajian file, dan cascade data. | Aktif (non-aktor) |
 
 Registrasi publik selalu menghasilkan role `student`. Role `teacher` dan `admin` diberikan melalui proses administrasi di luar form registrasi.
@@ -582,7 +598,10 @@ Keterangan:
 | Melihat submission sendiri | ❌ | ✅ | ❌ | ❌ | ❌ |
 | Melihat dan memberi nilai submission kelas | ❌ | ❌ | ❌ | ✅ classroom sendiri | ✅ classroom yang diajar bersama |
 | Mengunduh materi/submission privat | ❌ | Anggota/pemilik | ❌ | ✅ classroom sendiri | ✅ classroom yang diajar bersama |
-| Mengelola akun lintas sistem | ❌ | ❌ | ❌ | ❌ (belum tersedia) | ❌ (belum tersedia) |
+| Mengelola akun lintas sistem (ubah role, suspend/reset/hapus, bulk, export) | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Melihat dashboard admin dan audit log | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+> Aksi administrasi akun (`/admin/users`), dashboard admin (`/admin`), dan audit log (`/admin/audit-logs`) dijaga middleware `role:admin`, sehingga tidak tersedia untuk semua kolom di atas. Penangguhan akun ditolak untuk akun admin sendiri dan admin aktif terakhir.
 
 ### 7.3 Mekanisme Otorisasi
 
@@ -742,7 +761,31 @@ flowchart LR
     H --> C
     D --> F
     B --> I["Logout"]
+    B -.->|Admin| AD["Panel Admin:<br/>Dashboard, Kelola Pengguna,<br/>Audit Log"]
 ```
+
+### 8.7 Alur Penangguhan dan Reaktivasi Akun
+
+```mermaid
+flowchart TD
+    A(["Admin membuka direktori/<br/>detail pengguna"]) --> B["Klik Tangguhkan"]
+    B --> C{"Admin menangguhkan<br/>akunnya sendiri?"}
+    C -- "Ya" --> D["Ditolak:<br/>error akun"]
+    C -- "Tidak" --> E{"Target admin<br/>aktif terakhir?"}
+    E -- "Ya" --> D
+    E -- "Tidak" --> F["Status suspended,<br/>simpan alasan,<br/>rotasi remember_token"]
+    F --> G["Catat audit log<br/>account_suspended"]
+    G --> H{"Sesi target aktif?"}
+    H -- "Ya" --> I["Request berikutnya:<br/>middleware active<br/>logout + invalidate session"]
+    H -- "Tidak" --> J["Login ditolak<br/>dengan pesan akun ditangguhkan"]
+    I --> J
+    A --> K["Klik Aktifkan kembali"]
+    K --> L["Status active,<br/>hapus alasan penangguhan"]
+    L --> M["Catat audit log<br/>account_reactivated"]
+    L --> N["Pengguna dapat login kembali"]
+```
+
+Aksi massal memiliki jalur serupa per akun, tetapi kegagalan guard hanya membuat akun tersebut **dilewati**; laporan jumlah terproses dan daftar akun yang dilewati ditampilkan setelah transaksi selesai.
 
 ---
 
@@ -755,18 +798,26 @@ erDiagram
     USERS ||--o{ FOLDERS : "memiliki"
     USERS ||--o{ CLASSROOMS : "mengajar"
     USERS }o--o{ CLASSROOMS : "mengikuti"
+    USERS }o--o{ CLASSROOMS : "co-teaching"
+    USERS ||--o{ ADMIN_AUDIT_LOGS : "bertindak sebagai admin"
+    USERS ||--o{ ADMIN_AUDIT_LOGS : "menjadi target tindakan"
     FOLDERS ||--o{ RESOURCES : "berisi"
     FOLDERS ||--o{ NOTES : "berisi"
     FOLDERS ||--o{ PHOTOS : "berisi"
     FOLDERS ||--o{ SUBMISSIONS : "menerima"
     USERS ||--o{ SUBMISSIONS : "mengumpulkan"
+    SUBMISSIONS ||--o{ SUBMISSION_FILES : "berisi berkas"
 
     USERS {
         bigint id PK
         string name
         string email UK
         string password
-        enum role
+        string role
+        string status "active / suspended"
+        timestamp suspended_at
+        text suspension_reason
+        timestamp last_login_at
         string remember_token
         timestamp email_verified_at
         timestamp created_at
@@ -828,11 +879,34 @@ erDiagram
         bigint folder_id FK
         bigint student_id FK
         text submission_text
-        string file_path
         text submitted_url
         int grade
         text teacher_feedback
         enum status
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    SUBMISSION_FILES {
+        bigint id PK
+        bigint submission_id FK
+        string file_path
+        string original_name
+        bigint size "nullable"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    ADMIN_AUDIT_LOGS {
+        bigint id PK
+        bigint actor_user_id FK "nullable, nullOnDelete"
+        string actor_name
+        string actor_email
+        bigint target_user_id FK "nullable, nullOnDelete"
+        string target_name "nullable"
+        string target_email "nullable"
+        string action
+        json details "nullable"
         timestamp created_at
         timestamp updated_at
     }
@@ -870,17 +944,24 @@ erDiagram
 | Folder → Note | 1 : N | Satu folder berisi banyak catatan |
 | Folder → Photo | 1 : N | Satu folder berisi banyak foto |
 | User → Resource/Note/Photo | 1 : N (tidak langsung) | Kepemilikan diturunkan dari folder |
+| User → Classroom | N : M | Murid mengikuti dan guru mengajar banyak classroom |
+| User (co-teacher) → Classroom | N : M | Pengajar pengikut melalui `classroom_co_teacher` |
+| Submission → SubmissionFile | 1 : N | Satu submission dapat memuat beberapa berkas |
+| User → AdminAuditLog | 1 : N (aktor, target) | Log memakai snapshot nama/email; FK `nullOnDelete` untuk riwayat akun yang dihapus |
 
 ### 9.3 Enum
 
 | Tabel | Kolom | Nilai |
 | --- | --- | --- |
 | `users` | `role` | `admin`, `teacher`, `student` |
+| `users` | `status` | `active` (default), `suspended` |
 | `folders` | `visibility` | `private`, `class_material`, `assignment` |
 | `resources` | `resource_type` | `url`, `file`, `video`, `documentation`, `assignment_instruction` |
 | `resources` | `read_status` | `to_read`, `reading`, `completed` |
 | `notes` | `priority` | `low`, `medium`, `high` |
 | `submissions` | `status` | `submitted`, `graded`, `late` |
+| `admin_audit_logs` | `action` | `role_changed`, `password_reset`, `account_deleted`, `account_suspended`, `account_reactivated` |
+| `folders` | `classroom_id` | nullable; `null` berarti folder privat |
 
 ### 9.4 Integritas Data
 
@@ -924,6 +1005,11 @@ erDiagram
 | BR-23 | Admin tidak dapat mengubah role sendiri, menghapus akun sendiri, atau menghapus satu-satunya akun admin |
 | BR-24 | Akun dengan folder, classroom yang diajar, keanggotaan co-teacher/student, atau submission tidak dapat dihapus |
 | BR-25 | Password sementara hanya ditampilkan setelah reset dan tidak pernah dicatat di audit log |
+| BR-26 | Akun ditangguhkan tidak dapat login; sesi aktifnya diakhiri pada request berikutnya dan remember-me dicabut melalui rotasi token |
+| BR-27 | Ketika berkas materi dipratinjau, route menampilkan PDF inline; selain PDF tetap di-download |
+| BR-28 | Admin tidak dapat menangguhkan akun sendiri; admin aktif terakhir tidak dapat ditangguhkan, dihapus, atau diturunkan rolenya |
+| BR-29 | Aksi massal melaporkan jumlah akun terproses beserta daftar akun yang dilewati dan alasannya |
+| BR-30 | Export CSV mengikuti filter yang aktif dan disajikan sebagai unduhan streaming dengan BOM UTF-8 |
 
 ### 10.2 Validasi Input
 
@@ -1066,6 +1152,13 @@ Contoh:
 | UAT-26 | Hapus folder berisi foto | File foto ikut terhapus | ✅ |
 | UAT-27 | Login tanpa Remember me | Cookie session tidak memiliki masa berlaku persisten | ✅ |
 | UAT-28 | Login dengan Remember me | Recaller cookie memiliki masa berlaku persisten | ✅ |
+| UAT-29 | Admin menangguhkan akun murid | Akun suspended, login ditolak, sesi aktif diakhiri, audit tercatat | ✅ |
+| UAT-30 | Admin menangguhkan akun sendiri atau admin aktif terakhir | Ditolak dengan pesan guard | ✅ |
+| UAT-31 | Admin menjalankan aksi massal suspend | Laporan jumlah terproses dan daftar akun yang dilewati | ✅ |
+| UAT-32 | Admin export CSV pengguna dengan filter role | CSV hanya berisi akun sesuai filter | ✅ |
+| UAT-33 | Preview materi PDF oleh anggota kelas | PDF tampil inline di browser tanpa mengunduh | ✅ |
+| UAT-34 | Admin memfilter audit log berdasarkan tanggal/aksi | Hanya riwayat dalam rentang/tindakan terpilih yang tampil | ✅ |
+| UAT-35 | Field upload berkas memilih jenis selain berkas | Field upload tersembunyi secara otomatis | ✅ |
 
 ### 12.2 Definisi "Selesai" (Definition of Done)
 
@@ -1096,24 +1189,38 @@ Sebuah fitur dianggap selesai jika:
 | Status resource | ✅ | ✅ | Dropdown cepat |
 | Pindah resource | ✅ | ✅ | Modal pada detail folder |
 | Pencarian/filter resource | ✅ | ✅ | Judul, URL, notes, folder, tipe, status |
+| Pratinjau materi PDF | ✅ | ✅ | Route `resources.preview`; hanya untuk PDF |
+| Conditional upload field | ✅ | ✅ | Field berkas hanya tampil untuk jenis berkas |
+| Edit berkas tanpa re-upload | ✅ | ✅ | `UpdateResourceRequest` |
 | Catatan CRUD | ✅ | ✅ | Index/create/edit/detail lengkap |
 | Pencarian/filter catatan | ✅ | ✅ | Judul, isi, folder, prioritas |
 | Foto CRUD | ✅ | ✅ | Index/create/edit/detail/upload/ganti/hapus |
 | Foto privat | ✅ | ✅ | Route `photos.file` |
 | Pembersihan file foto | ✅ | ➖ | Event `deleting` pada model Folder |
-| Isolasi data | ✅ | ✅ | Global scope + validasi |
+| Classroom & kode gabung | ✅ | ✅ | Join murid, join co-teacher guru lain |
+| Co-teacher | ✅ | ✅ | Keluar sendiri / dikeluarkan pemilik |
+| Materi & tugas classroom | ✅ | ✅ | Folder `class_material` / `assignment` bertenggat |
+| Submission & penilaian | ✅ | ✅ | Teks, URL, multi-berkas; grading + feedback |
+| Isolasi data | ✅ | ✅ | Global scope + validasi + policy |
+| Panel admin — dashboard | ✅ | ✅ | Ringkasan akun/classroom/aktivitas |
+| Panel admin — direktori & detail pengguna | ✅ | ✅ | Filter, sorting, export, riwayat audit |
+| Panel admin — status akun | ✅ | ✅ | Suspend/reactivate, auto-logout via middleware `active` |
+| Panel admin — aksi massal | ✅ | ✅ | Suspend/reactivate/role dengan laporan |
+| Panel admin — reset password & hapus akun | ✅ | ✅ | Password sementara sekali tampil; guard penghapusan |
+| Audit log admin | ✅ | ✅ | Filter tanggal/aksi/search, export CSV |
+| Export CSV | ✅ | ✅ | Streamed, BOM UTF-8, mengikuti filter |
 | Optimasi performa | ✅ | ✅ | `withCount`, pagination per tab, indeks database |
 | Asset build | ✅ | ✅ | Tailwind via Vite, fallback CDN |
 | Dark mode | ➖ | ✅ | Client-side |
 | Responsif | ➖ | ✅ | Tailwind |
-| Test kepemilikan | ✅ | ➖ | Perlu `pdo_sqlite` |
+| Test suite | ✅ | ➖ | 70 test / 380 assertion (MySQL test DB) |
 
 ### 13.2 Gap yang Diketahui
 
-1. Panel admin mencatat tindakan perubahan role, reset password, dan penghapusan akun; audit aktivitas umum belum tersedia.
-2. Belum ada reset password melalui email, verifikasi email, dan manajemen profil.
-3. Test CRUD dan test akses file foto/LMS belum mencakup seluruh skenario.
-4. `phpunit.xml` memakai SQLite in-memory, sedangkan environment pengembangan saat ini belum mengaktifkan `pdo_sqlite` secara default. Suite dapat dijalankan dengan memuat DLL SQLite untuk proses PHPUnit.
+1. Audit log saat ini hanya mencakup tindakan administrasi akun; audit aktivitas umum pengguna (login, perubahan data konten) belum tersedia.
+2. Belum ada reset password melalui email, verifikasi email, manajemen profil, dan dua faktor autentikasi.
+3. Penangguhan akun belum memiliki notifikasi email kepada pengguna terkait.
+4. Beberapa file legacy (controller/request lama) belum lolos Pint secara penuh; style belum diseragamkan.
 5. File foto lama yang sudah terlanjur orphan sebelum perbaikan belum dibersihkan otomatis; perlu job/skrip pembersihan sekali jalan.
 6. Ikon Font Awesome masih dimuat dari CDN.
 
@@ -1165,11 +1272,12 @@ Sebuah fitur dianggap selesai jika:
 - Berbagi folder dengan tautan.
 - Kolaborator dan permission granular.
 - Komentar.
-- Activity log.
+- Activity log pengguna umum.
 - Object storage S3-compatible.
 - Full-text search.
+- Audit log aktivitas umum dan backup otomatis.
+- Two-factor authentication dan manajemen sesi aktif per pengguna.
 - API publik.
-- Audit log dan backup otomatis.
 
 ### Fase 4 — Integrasi Lanjutan
 
@@ -1224,6 +1332,16 @@ Sebuah fitur dianggap selesai jika:
 | FR-25 All Resources | `resources/index.blade.php` |
 | FR-26 s.d. FR-28 View daftar/detail | `notes/index`, `notes/show`, `photos/index`, `photos/show`, `resources/show` |
 | FR-31, FR-42 Administrasi akun | `AdminUserController`, `AdminAuditLogController`, `admin/users/index.blade.php`, `admin/audit-logs/index.blade.php` |
+| FR-32 s.d. FR-39 Classroom & LMS | `ClassroomController`, `SubmissionController`, `ClassroomVisibilityTest`, `SubmissionTest` |
+| FR-43, FR-44 Co-teacher | `ClassroomController::join/removeCoTeacher/leaveCoTeaching`, `CoTeacherTest` |
+| FR-45 Submission multi-berkas | `submission_files` migration, `SubmissionController::file`, `SubmissionTest` |
+| FR-46, FR-47 Preview & conditional field | `ResourceController::preview`, `Resource::is_previewable`, `ResourcePreviewTest`, `ResourceManagementTest` |
+| FR-48, FR-49 Suspend & auto-logout | `AdminUserController::suspend/reactivate`, `AuthController::login`, `EnsureAccountIsActive`, `AdminUserStatusTest` |
+| FR-50 Aksi massal | `AdminUserController::bulk`, `admin-bulk-form` di `admin/users/index.blade.php` |
+| FR-51 Export CSV | `AdminUserController::export`, `AdminAuditLogController::export`, `AdminExportsTest` |
+| FR-52 Dashboard admin | `AdminDashboardController`, `admin/dashboard.blade.php`, `AdminDashboardTest` |
+| FR-53 Detail pengguna | `AdminUserController::show`, `admin/users/show.blade.php`, `AdminUserDetailTest` |
+| FR-54 Filter audit log | `AdminAuditLogController::index`, `AdminAuditLogFilterTest` |
 
 ## Lampiran B — Referensi Dokumen
 
