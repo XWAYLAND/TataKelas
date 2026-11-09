@@ -45,18 +45,24 @@
 
             <div>
                 <label for="password" class="mb-2 block text-sm font-medium">Password</label>
-                <label class="input input-bordered flex w-full items-center gap-2">
+                <div class="input input-bordered flex w-full items-center gap-2">
                     <i class="fas fa-lock text-xs text-base-content/40"></i>
                     <input id="password" name="password" type="password" required minlength="8" autocomplete="new-password" class="grow" placeholder="At least 8 characters">
-                </label>
+                    <button type="button" class="btn btn-ghost btn-xs btn-circle -mr-1 shrink-0" data-password-toggle="password" aria-label="Show password" aria-pressed="false" title="Show password">
+                        <i class="fas fa-eye text-xs" aria-hidden="true"></i>
+                    </button>
+                </div>
             </div>
 
             <div>
                 <label for="password_confirmation" class="mb-2 block text-sm font-medium">Confirm password</label>
-                <label class="input input-bordered flex w-full items-center gap-2">
+                <div class="input input-bordered flex w-full items-center gap-2">
                     <i class="fas fa-lock text-xs text-base-content/40"></i>
                     <input id="password_confirmation" name="password_confirmation" type="password" required minlength="8" autocomplete="new-password" class="grow" placeholder="Repeat your password">
-                </label>
+                    <button type="button" class="btn btn-ghost btn-xs btn-circle -mr-1 shrink-0" data-password-toggle="password_confirmation" aria-label="Show password" aria-pressed="false" title="Show password">
+                        <i class="fas fa-eye text-xs" aria-hidden="true"></i>
+                    </button>
+                </div>
             </div>
 
             <button type="submit" class="btn btn-primary w-full">

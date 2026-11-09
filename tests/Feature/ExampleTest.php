@@ -27,10 +27,13 @@ class ExampleTest extends TestCase
     {
         $this->get(route('login'))
             ->assertOk()
-            ->assertSee('Masuk ke TataKelas');
+            ->assertSee('Masuk ke TataKelas')
+            ->assertSee('data-password-toggle="password"', false);
         $this->get(route('register'))
             ->assertOk()
-            ->assertSee('TataKelas');
+            ->assertSee('TataKelas')
+            ->assertSee('data-password-toggle="password"', false)
+            ->assertSee('data-password-toggle="password_confirmation"', false);
         $this->get(route('account.password.edit'))
             ->assertRedirect(route('login'));
     }

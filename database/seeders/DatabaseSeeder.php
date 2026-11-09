@@ -11,6 +11,6 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call(TataKelasDemoSeeder::class);
+        $this->call(DemoSeeder::class);
     }
 }

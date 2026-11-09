@@ -504,6 +504,26 @@ Seeder membuat akun demo berikut; semuanya memakai kata sandi lokal yang ditentu
 
 Data contoh meliputi workspace privat per akun, resource, catatan, foto privat, satu classroom, materi, tugas dengan tenggat, serta submission berstatus menunggu dan sudah dinilai. Folder privat tetap dimiliki masing-masing pengguna dan tidak dibagikan ke guru/admin. Kode gabung classroom demo adalah `TATAKELAS`.
 
+Seeder demo juga dipecah per fitur. `php artisan db:seed` menjalankan semuanya melalui `DemoSeeder` sesuai urutan dependensi:
+
+| Seeder | Data yang dibuat |
+| --- | --- |
+| `DemoUserSeeder` | Akun admin, guru, dan dua murid demo |
+| `DemoClassroomSeeder` | Classroom demo beserta anggota murid |
+| `DemoPersonalFolderSeeder` | Folder privat, resource, catatan, dan foto |
+| `DemoLearningMaterialSeeder` | Folder materi classroom dan resource-nya |
+| `DemoAssignmentSeeder` | Folder tugas, tenggat, dan instruksi tugas |
+| `DemoSubmissionSeeder` | Submission dan nilai dari murid |
+
+Untuk menjalankan satu fitur saja, jalankan seeder prasyaratnya lebih dulu:
+
+```bash
+php artisan db:seed --class=DemoUserSeeder
+php artisan db:seed --class=DemoClassroomSeeder
+php artisan db:seed --class=DemoAssignmentSeeder
+php artisan db:seed --class=DemoSubmissionSeeder
+```
+
 Seeder tidak mengosongkan database. Hindari `migrate:fresh` pada database yang berisi data penting; untuk mencoba seeder, cukup jalankan `php artisan db:seed`.
 
 ## Daftar Route

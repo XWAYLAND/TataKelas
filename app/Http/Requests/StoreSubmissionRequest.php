@@ -16,9 +16,10 @@ class StoreSubmissionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'submission_text' => ['nullable', 'string', 'max:10000', 'required_without_all:file,submitted_url'],
-            'file' => ['nullable', 'file', 'mimes:pdf,doc,docx,ppt,pptx,zip', 'max:20480', 'required_without_all:submission_text,submitted_url'],
-            'submitted_url' => ['nullable', 'url', 'max:2048', 'required_without_all:submission_text,file'],
+            'submission_text' => ['nullable', 'string', 'max:10000', 'required_without_all:files,submitted_url'],
+            'files' => ['nullable', 'array', 'max:10', 'required_without_all:submission_text,submitted_url'],
+            'files.*' => ['file', 'mimes:pdf,doc,docx,ppt,pptx,zip', 'max:20480'],
+            'submitted_url' => ['nullable', 'url', 'max:2048', 'required_without_all:submission_text,files'],
         ];
     }
 }

@@ -76,12 +76,14 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:student')->group(function () {
         Route::post('/folders/{folder}/submissions', [SubmissionController::class, 'store'])
             ->name('folders.submissions.store');
+        Route::delete('/folders/{folder}/submissions', [SubmissionController::class, 'destroy'])
+            ->name('folders.submissions.destroy');
     });
 
     Route::get('/resources/{resource}/file', [ResourceController::class, 'classroomFile'])
         ->name('resources.file');
-    Route::get('/submissions/{submission}/file', [SubmissionController::class, 'file'])
-        ->name('submissions.file');
+    Route::get('/submission-files/{file}', [SubmissionController::class, 'file'])
+        ->name('submissions.files.download');
 
     Route::middleware('role:teacher,student')->group(function () {
         Route::resource('folders', FolderController::class);

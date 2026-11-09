@@ -139,7 +139,18 @@
                                 <p class="mt-1 text-xs text-base-content/50">Submitted {{ $studentSubmission->created_at->format('M j, Y · g:i A') }}</p>
                                 @if($studentSubmission->submission_text)<p class="mt-3 whitespace-pre-line text-sm leading-6">{{ $studentSubmission->submission_text }}</p>@endif
                                 @if($studentSubmission->submitted_url)<a class="mt-2 inline-flex items-center gap-2 text-sm text-primary hover:underline" href="{{ $studentSubmission->submitted_url }}" target="_blank" rel="noopener noreferrer">Open submitted link <i class="fas fa-arrow-up-right-from-square text-xs"></i></a>@endif
-                                @if($studentSubmission->file_path)<p class="mt-2"><a class="btn btn-ghost btn-sm" href="{{ route('submissions.file', $studentSubmission) }}"><i class="fas fa-download"></i> Download submission</a></p>@endif
+                                @if($studentSubmission->files->isNotEmpty())
+                                    <ul class="mt-2 space-y-1">
+                                        @foreach($studentSubmission->files as $file)
+                                            <li>
+                                                <a class="btn btn-ghost btn-sm max-w-full justify-start" href="{{ route('submissions.files.download', $file) }}">
+                                                    <i class="fas fa-download shrink-0"></i>
+                                                    <span class="truncate">{{ $file->original_name }}</span>
+                                                </a>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                @endif
                             </div>
                             <div class="lg:self-start">
                                 <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('grade-{{ $studentSubmission->id }}').showModal()">
@@ -186,7 +197,7 @@
                         <span class="badge {{ $submission->status === 'graded' ? 'badge-success' : ($submission->status === 'late' ? 'badge-error' : 'badge-info') }}">{{ ucfirst($submission->status) }}</span>
                         @if(!is_null($submission->grade))<span class="badge badge-outline">Grade {{ $submission->grade }}/100</span>@endif
                     </div>
-                    <p class="mt-2 text-sm text-base-content/55">Submitted {{ $submission->created_at->format('M j, Y · g:i A') }}. Submitting again replaces your previous work.</p>
+                    <p class="mt-2 text-sm text-base-content/55">Submitted {{ $submission->created_at->format('M j, Y · g:i A') }}. Update it below, or unsend it if you need to start over.</p>
                     @if($submission->teacher_feedback)
                         <div class="mt-4 rounded-xl bg-success/10 p-4">
                             <p class="text-sm font-semibold">Teacher feedback</p>
@@ -195,7 +206,7 @@
                     @endif
                 @else
                     <h2 class="font-semibold">Submit your work</h2>
-                    <p class="mt-1 text-sm text-base-content/55">Add a written response, a link, or upload a file. Late submissions are accepted and marked late.</p>
+                    <p class="mt-1 text-sm text-base-content/55">Add a written response, a link, or upload up to 10 files. Late submissions are accepted and marked late.</p>
                 @endif
 
                 @if($errors->any())
@@ -209,22 +220,143 @@
                         <textarea class="textarea textarea-bordered min-h-28 w-full" name="submission_text" rows="4" maxlength="10000">{{ old('submission_text', $submission?->submission_text) }}</textarea>
                     </label>
                     <div class="grid gap-4 sm:grid-cols-2">
-                        <label class="form-control">
-                            <span class="label-text mb-2 font-medium">Attach file</span>
-                            <input class="file-input file-input-bordered w-full" type="file" name="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip">
-                            <span class="mt-1 text-xs text-base-content/50">PDF, Office documents, or ZIP · max 20 MB</span>
-                        </label>
+                        <div class="form-control">
+                            <label for="submission-files" class="label-text mb-2 font-medium">Attach files</label>
+                            <input id="submission-files" class="file-input file-input-bordered w-full" type="file" name="files[]" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip" multiple>
+                            <span class="mt-1 text-xs text-base-content/50">PDF, Office documents, or ZIP · up to 10 files · max 20 MB each</span>
+                            <p id="submission-files-warning" class="mt-1 hidden text-xs font-medium text-warning">Only the first 10 files are kept. Remove one file before adding another.</p>
+                            <div id="submission-files-panel" class="mt-2 hidden overflow-hidden rounded-xl border border-base-300/80 bg-base-100">
+                                <p class="border-b border-base-300/70 px-3 py-2 text-xs font-medium text-base-content/65">
+                                    Selected files <span id="submission-files-count" class="text-base-content/45"></span>
+                                </p>
+                                <ul id="submission-files-items" class="divide-y divide-base-300/70"></ul>
+                            </div>
+                        </div>
                         <label class="form-control">
                             <span class="label-text mb-2 font-medium">Or submit a link</span>
                             <input class="input input-bordered w-full" type="url" name="submitted_url" value="{{ old('submitted_url', $submission?->submitted_url) }}" placeholder="https://...">
                         </label>
                     </div>
-                    @if($submission?->file_path)
-                        <p class="text-sm text-base-content/55">Current attachment: <a class="link link-primary" href="{{ route('submissions.file', $submission) }}">download it</a></p>
+                    @if($submission?->files->isNotEmpty())
+                        <div class="rounded-xl bg-base-200/50 p-3">
+                            <p class="text-sm font-medium">Current attachments</p>
+                            <p class="mt-1 text-xs text-base-content/50">Uploading new files replaces these attachments.</p>
+                            <ul class="mt-2 space-y-1">
+                                @foreach($submission->files as $file)
+                                    <li>
+                                        <a class="link link-primary inline-flex max-w-full items-center gap-2 text-sm" href="{{ route('submissions.files.download', $file) }}">
+                                            <i class="fas fa-paperclip shrink-0"></i>
+                                            <span class="truncate">{{ $file->original_name }}</span>
+                                        </a>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
                     @endif
-                    <div><button class="btn btn-primary"><i class="fas fa-paper-plane"></i> {{ $submission ? 'Update submission' : 'Submit assignment' }}</button></div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button class="btn btn-primary"><i class="fas fa-paper-plane"></i> {{ $submission ? 'Update submission' : 'Submit assignment' }}</button>
+                    </div>
                 </form>
+                @if($submission)
+                    <form action="{{ route('folders.submissions.destroy', $folder) }}" method="POST" class="mt-3" onsubmit="return confirm('Unsend this assignment? Your submission and all attached files will be deleted.');">
+                        @csrf
+                        @method('DELETE')
+                        <button class="btn btn-outline btn-error" type="submit"><i class="fas fa-rotate-left"></i> Unsend assignment</button>
+                    </form>
+                @endif
             </section>
         @endif
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        (function () {
+            var input = document.getElementById('submission-files');
+            if (!input || typeof DataTransfer === 'undefined') return;
+
+            var maxFiles = 10;
+            var selected = [];
+            var panel = document.getElementById('submission-files-panel');
+            var items = document.getElementById('submission-files-items');
+            var count = document.getElementById('submission-files-count');
+            var warning = document.getElementById('submission-files-warning');
+
+            function formatSize(bytes) {
+                if (bytes < 1024) return bytes + ' B';
+                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+            }
+
+            function syncInput() {
+                var transfer = new DataTransfer();
+                selected.forEach(function (file) {
+                    transfer.items.add(file);
+                });
+                input.files = transfer.files;
+            }
+
+            function render() {
+                items.innerHTML = '';
+                panel.classList.toggle('hidden', selected.length === 0);
+                count.textContent = selected.length ? '(' + selected.length + ' / ' + maxFiles + ')' : '';
+
+                selected.forEach(function (file, index) {
+                    var row = document.createElement('li');
+                    row.className = 'flex items-center justify-between gap-3 px-3 py-2';
+
+                    var info = document.createElement('div');
+                    info.className = 'min-w-0';
+
+                    var name = document.createElement('p');
+                    name.className = 'truncate text-sm font-medium';
+                    name.textContent = file.name;
+
+                    var meta = document.createElement('p');
+                    meta.className = 'text-xs text-base-content/50';
+                    meta.textContent = formatSize(file.size);
+
+                    info.append(name, meta);
+
+                    var remove = document.createElement('button');
+                    remove.type = 'button';
+                    remove.className = 'btn btn-ghost btn-xs shrink-0 text-error';
+                    remove.setAttribute('aria-label', 'Remove ' + file.name);
+                    remove.innerHTML = '<i class="fas fa-xmark"></i> Remove';
+                    remove.addEventListener('click', function () {
+                        selected.splice(index, 1);
+                        syncInput();
+                        render();
+                        warning.classList.add('hidden');
+                    });
+
+                    row.append(info, remove);
+                    items.appendChild(row);
+                });
+            }
+
+            input.addEventListener('change', function () {
+                var hitLimit = false;
+
+                Array.prototype.forEach.call(input.files, function (file) {
+                    if (selected.length >= maxFiles) {
+                        hitLimit = true;
+                        return;
+                    }
+
+                    var duplicate = selected.some(function (existing) {
+                        return existing.name === file.name
+                            && existing.size === file.size
+                            && existing.lastModified === file.lastModified;
+                    });
+
+                    if (!duplicate) selected.push(file);
+                });
+
+                syncInput();
+                render();
+                warning.classList.toggle('hidden', !hitLimit);
+            });
+        })();
+    </script>
+@endpush

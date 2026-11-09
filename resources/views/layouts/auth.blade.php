@@ -105,6 +105,23 @@
                 localStorage.theme = isDark ? 'dark' : 'light';
             });
         });
+
+        document.querySelectorAll('[data-password-toggle]').forEach(function (button) {
+            var input = document.getElementById(button.dataset.passwordToggle);
+            if (!input) return;
+
+            var icon = button.querySelector('i');
+
+            button.addEventListener('click', function () {
+                var show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                button.setAttribute('aria-pressed', show ? 'true' : 'false');
+                button.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+                button.setAttribute('title', show ? 'Hide password' : 'Show password');
+                if (icon) icon.className = show ? 'fas fa-eye-slash text-xs' : 'fas fa-eye text-xs';
+                input.focus();
+            });
+        });
     </script>
 </body>
 </html>

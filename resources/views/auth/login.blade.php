@@ -37,10 +37,13 @@
 
             <div>
                 <label for="password" class="mb-2 block text-sm font-medium">Password</label>
-                <label class="input input-bordered flex w-full items-center gap-2">
+                <div class="input input-bordered flex w-full items-center gap-2">
                     <i class="fas fa-lock text-xs text-base-content/40"></i>
                     <input id="password" name="password" type="password" required autocomplete="current-password" class="grow" placeholder="Your password">
-                </label>
+                    <button type="button" class="btn btn-ghost btn-xs btn-circle -mr-1 shrink-0" data-password-toggle="password" aria-label="Show password" aria-pressed="false" title="Show password">
+                        <i class="fas fa-eye text-xs" aria-hidden="true"></i>
+                    </button>
+                </div>
             </div>
 
             <label class="flex items-center gap-2 text-sm text-base-content/65">

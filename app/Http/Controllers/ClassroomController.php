@@ -161,9 +161,9 @@ class ClassroomController extends Controller
         $canManage = auth()->user()->can('createClassFolder', $classroom);
         $submission = $canManage
             ? null
-            : $folder->submissions()->where('student_id', auth()->id())->first();
+            : $folder->submissions()->with('files')->where('student_id', auth()->id())->first();
         $submissions = $canManage
-            ? $folder->submissions()->with('student')->latest()->get()
+            ? $folder->submissions()->with(['student', 'files'])->latest()->get()
             : collect();
         $pendingStudents = $canManage
             ? $classroom->students()
